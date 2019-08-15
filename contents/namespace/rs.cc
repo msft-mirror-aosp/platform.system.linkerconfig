@@ -28,7 +28,7 @@ Namespace BuildRsNamespace([[maybe_unused]] const Context& ctx) {
                    /*with_data_asan=*/true);
   ns.AddSearchPath("/vendor/${LIB}/vndk-sp", /*also_in_asan=*/true,
                    /*with_data_asan=*/true);
-  ns.AddSearchPath("/system/${LIB}/vndk-sp@{VNDK_VER}", /*also_in_asan=*/true,
+  ns.AddSearchPath("/system/${LIB}/vndk-sp-@{VNDK_VER}", /*also_in_asan=*/true,
                    /*with_data_asan=*/true);
   ns.AddSearchPath("/odm/${LIB}", /*also_in_asan=*/true,
                    /*with_data_asan=*/true);
@@ -45,8 +45,9 @@ Namespace BuildRsNamespace([[maybe_unused]] const Context& ctx) {
 
   ns.CreateLink("default").AddSharedLib({"@{LLNDK_LIBRARIES}",
                                          "@{SANITIZER_RUNTIME_LIBRARIES}",
-                                         "@{PRIVATE_LLNDK_LIBRARIES}"});
+                                         "@{PRIVATE_LLNDK_LIBRARIES:}"});
   ns.CreateLink("vndk").AddSharedLib("@{VNDK_SAMEPROCESS_LIBRARIES}");
+  ns.CreateLink("neuralnetworks").AddSharedLib("libneuralnetworks.so");
 
   return ns;
 }

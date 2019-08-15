@@ -25,14 +25,23 @@ Namespace BuildSystemNamespace([[maybe_unused]] const Context& ctx) {
   Namespace ns("system", /*is_isolated=*/false, /*is_visible=*/false);
   ns.AddSearchPath("/system/${LIB}", /*also_in_asan=*/true,
                    /*with_data_asan=*/true);
-  ns.AddSearchPath("/@{PRODUCT:product}/${LIB}", /*also_in_asan=*/true,
+  ns.AddSearchPath("/@{SYSTEM_EXT:system_ext}/${LIB}", /*also_in_asan=*/true,
                    /*with_data_asan=*/true);
-  ns.AddSearchPath("/@{PRODUCT_SERVICES}/${LIB}", /*also_in_asan=*/true,
+  ns.AddSearchPath("/@{PRODUCT:product}/${LIB}", /*also_in_asan=*/true,
                    /*with_data_asan=*/true);
 
   ns.CreateLink("runtime").AddSharedLib(
-      {"libdexfile_external.so", "libnativebridge.so", "libnativehelper.so",
-       "libnativeloader.so", "libandroidicu.so"});
+      {"libdexfile_external.so",
+       "libdexfile_external.so",
+       "libnativebridge.so",
+       "libnativehelper.so",
+       "libnativeloader.so",
+       "libandroidicu.so",
+       // TODO(b/120786417 or b/134659294): libicuuc.so and libicui18n.so are
+       // kept for app compat.
+       "libicui18n.so",
+       "libicuuc.so",
+       "@{SANITIZER_RUNTIME_LIBRARIES}"});
 
   return ns;
 }

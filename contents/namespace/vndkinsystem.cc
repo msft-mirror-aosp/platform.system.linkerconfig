@@ -16,6 +16,8 @@
 
 #include "linkerconfig/namespacebuilder.h"
 
+#include "linkerconfig/environment.h"
+
 using android::linkerconfig::modules::Namespace;
 
 namespace android {
@@ -27,16 +29,20 @@ Namespace BuildVndkInSystemNamespace([[maybe_unused]] const Context& ctx) {
 
   ns.AddSearchPath("/system/${LIB}", /*also_in_asan=*/true,
                    /*with_data_asan=*/true);
+  ns.AddSearchPath("/@{SYSTEM_EXT:system_ext}/${LIB}",
+                   /*also_in_asan=*/true, /*with_data_asan=*/true);
   ns.AddSearchPath("/@{PRODUCT:product}/${LIB}", /*also_in_asan=*/true,
                    /*with_data_asan=*/true);
-  ns.AddSearchPath("/@{PRODUCT_SERVICES:product_services}/${LIB}",
-                   /*also_in_asan=*/true, /*with_data_asan=*/true);
 
-  ns.AddWhitelisted("@{VNDK_USING_CORE_VARIANT_LIBRARIES}");
+  if (android::linkerconfig::modules::IsVndkInSystemNamespace()) {
+    ns.AddWhitelisted("@{VNDK_USING_CORE_VARIANT_LIBRARIES}");
+  }
 
   ns.CreateLink("system").AddSharedLib(
       {"@{LLNDK_LIBRARIES}", "@{SANITIZER_RUNTIME_LIBRARIES}"});
   ns.CreateLink("vndk", true);
+  ns.CreateLink("runtime").AddSharedLib("@{SANITIZER_RUNTIME_LIBRARIES}");
+  ns.CreateLink("neuralnetworks").AddSharedLib("libneuralnetworks.so");
 
   return ns;
 }
