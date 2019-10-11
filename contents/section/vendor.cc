@@ -16,6 +16,7 @@
 
 #include "linkerconfig/sectionbuilder.h"
 
+#include "linkerconfig/common.h"
 #include "linkerconfig/environment.h"
 #include "linkerconfig/namespacebuilder.h"
 #include "linkerconfig/section.h"
@@ -23,21 +24,6 @@
 using android::linkerconfig::contents::SectionType;
 using android::linkerconfig::modules::Namespace;
 using android::linkerconfig::modules::Section;
-
-namespace {
-const std::vector<std::string> kBinaryPath = {
-    "/odm/bin/",
-    "/vendor/bin/",
-    "/data/nativetest/odm",
-    "/data/nativetest64/odm",
-    "/data/benchmarktest/odm",
-    "/data/benchmarktest64/odm",
-    "/data/nativetest/vendor",
-    "/data/nativetest64/vendor",
-    "/data/benchmarktest/vendor",
-    "/data/benchmarktest64/vendor",
-};
-}  // namespace
 
 namespace android {
 namespace linkerconfig {
@@ -47,7 +33,7 @@ Section BuildVendorSection(Context& ctx) {
   std::vector<Namespace> namespaces;
 
   namespaces.emplace_back(BuildVendorDefaultNamespace(ctx));
-  namespaces.emplace_back(BuildRuntimeNamespace(ctx));
+  namespaces.emplace_back(BuildArtNamespace(ctx));
   namespaces.emplace_back(BuildVndkNamespace(ctx));
   namespaces.emplace_back(BuildSystemNamespace(ctx));
   namespaces.emplace_back(BuildNeuralNetworksNamespace(ctx));
@@ -56,7 +42,9 @@ Section BuildVendorSection(Context& ctx) {
     namespaces.emplace_back(BuildVndkInSystemNamespace(ctx));
   }
 
-  return Section("vendor", kBinaryPath, std::move(namespaces));
+  Section section("vendor", std::move(namespaces));
+  AddStandardSystemLinks(ctx, &section);
+  return section;
 }
 }  // namespace contents
 }  // namespace linkerconfig

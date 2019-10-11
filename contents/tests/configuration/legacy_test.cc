@@ -13,35 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma once
 
-#include <string>
+#include "linkerconfig/legacy.h"
+#include "configurationtest.h"
+#include "linkerconfig/configwriter.h"
+#include "mockenv.h"
 
-namespace android {
-namespace linkerconfig {
-namespace contents {
+TEST(linkerconfig_configuration_fulltest, legacy_test) {
+  MockGenericVariables();
+  auto legacy_config =
+      android::linkerconfig::contents::CreateLegacyConfiguration();
+  android::linkerconfig::modules::ConfigWriter config_writer;
 
-enum class SectionType {
-  System,
-  Vendor,
-  Other,
-};
+  legacy_config.WriteConfig(config_writer);
 
-class Context {
- public:
-  Context() : current_section(SectionType::System) {
-  }
-  bool IsSystemSection() const;
-  bool IsVendorSection() const;
-
-  void SetCurrentSection(SectionType value);
-
-  // Returns the namespace that covers /system/${LIB}.
-  std::string GetSystemNamespaceName() const;
-
- private:
-  SectionType current_section;
-};
-}  // namespace contents
-}  // namespace linkerconfig
-}  // namespace android
+  VerifyConfiguration(config_writer.ToString());
+}
