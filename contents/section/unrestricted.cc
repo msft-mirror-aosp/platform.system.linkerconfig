@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+// Linker config for native tests that need access to both system and vendor
+// libraries. This replicates the default linker config (done by
+// init_default_namespace_no_config in bionic/linker/linker.cpp), except that it
+// includes the requisite namespace setup for APEXes.
+
 #include "linkerconfig/sectionbuilder.h"
 
 #include "linkerconfig/common.h"
@@ -38,6 +43,7 @@ Section BuildUnrestrictedSection(Context& ctx) {
   namespaces.emplace_back(BuildConscryptNamespace(ctx));
   namespaces.emplace_back(BuildResolvNamespace(ctx));
   namespaces.emplace_back(BuildNeuralNetworksNamespace(ctx));
+  namespaces.emplace_back(BuildRuntimeNamespace(ctx));
 
   Section section("unrestricted", std::move(namespaces));
   AddStandardSystemLinks(ctx, &section);
