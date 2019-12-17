@@ -15,8 +15,11 @@
  */
 #pragma once
 
+#include <set>
 #include <string>
 #include <vector>
+
+#include <android-base/result.h>
 
 #include "linkerconfig/configwriter.h"
 #include "linkerconfig/link.h"
@@ -108,6 +111,21 @@ class Namespace {
   bool ContainsSearchPath(const std::string& path, AsanPath path_from_asan);
   bool ContainsPermittedPath(const std::string& path, AsanPath path_from_asan);
 
+  template <typename Vec>
+  void AddProvides(const Vec& list) {
+    provides_.insert(list.begin(), list.end());
+  }
+  template <typename Vec>
+  void AddRequires(const Vec& list) {
+    requires_.insert(list.begin(), list.end());
+  }
+  const std::set<std::string>& GetProvides() const {
+    return provides_;
+  }
+  const std::set<std::string>& GetRequires() const {
+    return requires_;
+  }
+
  private:
   const bool is_isolated_;
   const bool is_visible_;
@@ -118,9 +136,16 @@ class Namespace {
   std::vector<std::string> asan_permitted_paths_;
   std::vector<std::string> whitelisted_;
   std::vector<Link> links_;
+  std::set<std::string> provides_;
+  std::set<std::string> requires_;
+
   void WritePathString(ConfigWriter& writer, const std::string& path_type,
                        const std::vector<std::string>& path_list);
 };
+
+::android::base::Result<void> InitializeWithApex(Namespace& ns,
+                                                 const std::string& apex_path);
+
 }  // namespace modules
 }  // namespace linkerconfig
 }  // namespace android

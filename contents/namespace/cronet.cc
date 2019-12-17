@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-// This namespace is for libraries within the resolv APEX.
+// This namespace is for libraries within the NNAPI APEX.
 
 #include "linkerconfig/namespacebuilder.h"
 
-#include <string>
-#include <vector>
+#include "linkerconfig/environment.h"
+#include "linkerconfig/namespace.h"
 
 using android::linkerconfig::modules::AsanPath;
 using android::linkerconfig::modules::Namespace;
@@ -27,13 +27,14 @@ using android::linkerconfig::modules::Namespace;
 namespace android {
 namespace linkerconfig {
 namespace contents {
-Namespace BuildResolvNamespace([[maybe_unused]] const Context& ctx) {
-  Namespace ns("resolv", /*is_isolated=*/true, /*is_visible=*/true);
-  ns.AddSearchPath("/apex/com.android.resolv/${LIB}", AsanPath::SAME_PATH);
+Namespace BuildCronetNamespace([[maybe_unused]] const Context& ctx) {
+  Namespace ns("cronet", /*is_isolated=*/true, /*is_visible=*/true);
+  ns.AddSearchPath("/apex/com.android.cronet/${LIB}", AsanPath::SAME_PATH);
   ns.AddPermittedPath("/system/${LIB}");
 
-  ns.GetLink(ctx.GetSystemNamespaceName()).AddSharedLib({"libbinder_ndk.so"});
-
+  ns.GetLink(ctx.GetSystemNamespaceName())
+      .AddSharedLib(
+          "libandroid.so", "libc.so", "libdl.so", "libm.so", "liblog.so");
   return ns;
 }
 }  // namespace contents

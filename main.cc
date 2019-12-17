@@ -25,13 +25,14 @@
 #include "linkerconfig/environment.h"
 #include "linkerconfig/legacy.h"
 #include "linkerconfig/log.h"
+#include "linkerconfig/recovery.h"
 #include "linkerconfig/variableloader.h"
 #include "linkerconfig/variables.h"
 
 namespace {
 const static struct option program_options[] = {
     {"target", required_argument, 0, 't'},
-#ifndef __ANROID__
+#ifndef __ANDROID__
     {"root", required_argument, 0, 'r'},
     {"vndk", required_argument, 0, 'v'},
 #endif
@@ -50,6 +51,7 @@ struct ProgramArgs {
                " --root <root dir>"
                " --vndk <vndk version>"
 #endif
+               " [--recovery]"
                " [--help]"
             << std::endl;
   exit(status);
@@ -84,11 +86,13 @@ bool ParseArgs(int argc, char* argv[], ProgramArgs* args) {
 }
 
 android::linkerconfig::modules::Configuration GetConfiguration() {
+  if (android::linkerconfig::modules::IsRecoveryMode()) {
+    return android::linkerconfig::contents::CreateRecoveryConfiguration();
+  }
+
   if (android::linkerconfig::modules::IsLegacyDevice()) {
     return android::linkerconfig::contents::CreateLegacyConfiguration();
   }
-
-  // TODO : Use recovery if needed
 
   // Use base configuration in default
   return android::linkerconfig::contents::CreateBaseConfiguration();
