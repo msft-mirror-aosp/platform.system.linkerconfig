@@ -20,7 +20,6 @@
 #include <vector>
 
 #include "linkerconfig/configwriter.h"
-#include "linkerconfig/log.h"
 
 namespace android {
 namespace linkerconfig {
@@ -34,6 +33,7 @@ class Link {
   }
   Link(const Link&) = delete;
   Link(Link&&) = default;
+  Link& operator=(Link&&) = default;
 
   template <typename T, typename... Args>
   void AddSharedLib(T&& lib_name, Args&&... lib_names);

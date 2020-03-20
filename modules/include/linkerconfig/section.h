@@ -22,6 +22,7 @@
 
 #include <android-base/result.h>
 
+#include "linkerconfig/basecontext.h"
 #include "linkerconfig/configwriter.h"
 #include "linkerconfig/namespace.h"
 
@@ -42,7 +43,7 @@ class Section {
   std::vector<std::string> GetBinaryPaths();
   std::string GetName();
 
-  android::base::Result<void> Resolve();
+  android::base::Result<void> Resolve(const BaseContext& ctx);
   Namespace* GetNamespace(const std::string& namespace_name);
 
   template <class _Function>

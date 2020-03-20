@@ -16,17 +16,10 @@
 
 #include "linkerconfig/namespace.h"
 
-#include <android-base/file.h>
 #include <android-base/strings.h>
-#include <apex_manifest.pb.h>
 
+#include "linkerconfig/apex.h"
 #include "linkerconfig/log.h"
-
-using ::android::base::Error;
-using ::android::base::ReadFileToString;
-using ::android::base::Result;
-using ::android::base::WriteStringToFile;
-using ::apex::proto::ApexManifest;
 
 namespace {
 
@@ -43,46 +36,18 @@ bool FindFromPathList(const std::vector<std::string>& list,
   return false;
 }
 
-Result<ApexManifest> ParseApexManifest(const std::string& manifest_path) {
-  std::string content;
-  if (!ReadFileToString(manifest_path, &content)) {
-    return Error() << "Failed to read manifest file: " << manifest_path;
-  }
-
-  ApexManifest manifest;
-  if (!manifest.ParseFromString(content)) {
-    return Error() << "Can't parse APEX manifest.";
-  }
-  return manifest;
-}
-
 }  // namespace
 
 namespace android {
 namespace linkerconfig {
 namespace modules {
 
-Result<void> InitializeWithApex(Namespace& ns, const std::string& apex_path) {
-  auto apex_manifest = ParseApexManifest(apex_path + "/apex_manifest.pb");
-  if (!apex_manifest) {
-    return apex_manifest.error();
-  }
-  ns.AddSearchPath(apex_path + "/${LIB}");
+void InitializeWithApex(Namespace& ns, const ApexInfo& apex_info) {
+  ns.AddSearchPath(apex_info.path + "/${LIB}");
+  ns.AddPermittedPath(apex_info.path + "/${LIB}");
   ns.AddPermittedPath("/system/${LIB}");
-  ns.AddProvides(apex_manifest->providenativelibs());
-  ns.AddRequires(apex_manifest->requirenativelibs());
-  return {};
-}
-
-void Namespace::WritePathString(ConfigWriter& writer,
-                                const std::string& path_type,
-                                const std::vector<std::string>& path_list) {
-  std::string prefix = path_type + ".paths ";
-  bool is_first = true;
-  for (auto& path : path_list) {
-    writer.WriteLine(prefix + (is_first ? "= " : "+= ") + path);
-    is_first = false;
-  }
+  ns.AddProvides(apex_info.provide_libs);
+  ns.AddRequires(apex_info.require_libs);
 }
 
 Link& Namespace::GetLink(const std::string& target_namespace) {
@@ -95,25 +60,19 @@ Link& Namespace::GetLink(const std::string& target_namespace) {
 }
 
 void Namespace::WriteConfig(ConfigWriter& writer) {
-  writer.SetPrefix("namespace." + name_ + ".");
+  const auto prefix = "namespace." + name_ + ".";
 
-  writer.WriteLine("isolated = %s", is_isolated_ ? "true" : "false");
+  writer.WriteLine(prefix + "isolated = " + (is_isolated_ ? "true" : "false"));
 
   if (is_visible_) {
-    writer.WriteLine("visible = true");
+    writer.WriteLine(prefix + "visible = true");
   }
 
-  WritePathString(writer, "search", search_paths_);
-  WritePathString(writer, "permitted", permitted_paths_);
-  WritePathString(writer, "asan.search", asan_search_paths_);
-  WritePathString(writer, "asan.permitted", asan_permitted_paths_);
-
-  bool is_first = true;
-  for (const auto& whitelisted : whitelisted_) {
-    writer.WriteLine(
-        "whitelisted %s %s", is_first ? "=" : "+=", whitelisted.c_str());
-    is_first = false;
-  }
+  writer.WriteVars(prefix + "search.paths", search_paths_);
+  writer.WriteVars(prefix + "permitted.paths", permitted_paths_);
+  writer.WriteVars(prefix + "asan.search.paths", asan_search_paths_);
+  writer.WriteVars(prefix + "asan.permitted.paths", asan_permitted_paths_);
+  writer.WriteVars(prefix + "whitelisted", whitelisted_);
 
   if (!links_.empty()) {
     std::vector<std::string> link_list;
@@ -121,14 +80,12 @@ void Namespace::WriteConfig(ConfigWriter& writer) {
     for (const auto& link : links_) {
       link_list.push_back(link.To());
     }
-    writer.WriteLine("links = " + android::base::Join(link_list, ","));
+    writer.WriteLine(prefix + "links = " + android::base::Join(link_list, ","));
 
     for (const auto& link : links_) {
       link.WriteConfig(writer);
     }
   }
-
-  writer.ResetPrefix();
 }
 
 void Namespace::AddSearchPath(const std::string& path, AsanPath path_from_asan) {

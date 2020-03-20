@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 The Android Open Source Project
+ * Copyright (C) 2020 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,28 +14,16 @@
  * limitations under the License.
  */
 
-// This namespace is for libraries within the resolv APEX.
-
 #include "linkerconfig/namespacebuilder.h"
-
-#include <string>
-#include <vector>
-
-using android::linkerconfig::modules::AsanPath;
-using android::linkerconfig::modules::Namespace;
 
 namespace android {
 namespace linkerconfig {
 namespace contents {
-Namespace BuildResolvNamespace([[maybe_unused]] const Context& ctx) {
-  Namespace ns("resolv", /*is_isolated=*/true, /*is_visible=*/true);
-  ns.AddSearchPath("/apex/com.android.resolv/${LIB}", AsanPath::SAME_PATH);
-  ns.AddPermittedPath("/system/${LIB}");
 
-  ns.GetLink(ctx.GetSystemNamespaceName()).AddSharedLib({"libbinder_ndk.so"});
-
-  return ns;
+void RegisterApexNamespaceBuilders(Context& ctx) {
+  ctx.RegisterApexNamespaceBuilder("com.android.art", BuildArtNamespace);
 }
+
 }  // namespace contents
 }  // namespace linkerconfig
 }  // namespace android

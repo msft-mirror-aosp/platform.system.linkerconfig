@@ -19,11 +19,9 @@
 #include <string>
 #include <vector>
 
-#include <android-base/result.h>
-
+#include "linkerconfig/apex.h"
 #include "linkerconfig/configwriter.h"
 #include "linkerconfig/link.h"
-#include "linkerconfig/log.h"
 
 namespace android {
 namespace linkerconfig {
@@ -53,6 +51,7 @@ class Namespace {
 
   Namespace(const Namespace& ns) = delete;
   Namespace(Namespace&& ns) = default;
+  Namespace& operator=(Namespace&& ns) = default;
 
   // Add path to search path
   // This function will add path to namespace.<<namespace>>.search.paths
@@ -101,6 +100,13 @@ class Namespace {
 
   std::string GetName() const;
 
+  void SetVisible(bool visible) {
+    is_visible_ = visible;
+  }
+  bool IsVisible() const {
+    return is_visible_;
+  }
+
   // For test usage
   const std::vector<Link>& Links() const {
     return links_;
@@ -127,9 +133,9 @@ class Namespace {
   }
 
  private:
-  const bool is_isolated_;
-  const bool is_visible_;
-  const std::string name_;
+  bool is_isolated_;
+  bool is_visible_;
+  std::string name_;
   std::vector<std::string> search_paths_;
   std::vector<std::string> permitted_paths_;
   std::vector<std::string> asan_search_paths_;
@@ -143,9 +149,7 @@ class Namespace {
                        const std::vector<std::string>& path_list);
 };
 
-::android::base::Result<void> InitializeWithApex(Namespace& ns,
-                                                 const std::string& apex_path);
-
+void InitializeWithApex(Namespace& ns, const ApexInfo& apex_info);
 }  // namespace modules
 }  // namespace linkerconfig
 }  // namespace android

@@ -21,11 +21,11 @@ cc_defaults {
         "-Werror",
         "-Wextra",
     ],
+    defaults: ["libapexutil-deps"],
     static_libs: [
+        "libapexutil",
         "libbase",
         "liblog",
-        "libprotobuf-cpp-lite",
-        "lib_apex_manifest_proto_lite",
     ],
     host_supported: true,
 }
@@ -91,6 +91,14 @@ cc_binary {
         "main.cc",
     ],
     static_executable: true,
+    required: [
+        // files from /system/etc
+        "sanitizer.libraries.txt",
+        "vndkcorevariant.libraries.txt",
+        // Note that even thought linkerconfig requires at least one version of VNDK APEXes,
+        // we can't list it here because the exact version is unknown at build-time. It is decided
+        // at runtime according to ro.vndk.version (or ro.product.vndk.version)
+    ],
 }
 
 cc_test {
@@ -146,5 +154,19 @@ cc_test {
         "linkerconfig_modules",
         "linkerconfig_contents",
     ],
-    host_supported: true,
+}
+
+prebuilt_etc {
+    name: "ld.config.recovery.txt",
+    recovery: true,
+    filename: "ld.config.txt",
+    src: ":generate_recovery_linker_config",
+}
+
+genrule {
+    name: "generate_recovery_linker_config",
+    recovery: true,
+    out: ["ld.config.txt"],
+    tools: ["linkerconfig"],
+    cmd: "$(location linkerconfig) --recovery --target $(genDir)",
 }

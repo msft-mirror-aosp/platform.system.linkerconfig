@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 The Android Open Source Project
+ * Copyright (C) 2020 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,28 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-// This namespace is for libraries within the NNAPI APEX.
-
 #include "linkerconfig/namespacebuilder.h"
 
+#include "linkerconfig/apex.h"
 #include "linkerconfig/environment.h"
 #include "linkerconfig/namespace.h"
 
+using android::linkerconfig::modules::ApexInfo;
 using android::linkerconfig::modules::AsanPath;
 using android::linkerconfig::modules::Namespace;
 
 namespace android {
 namespace linkerconfig {
 namespace contents {
-Namespace BuildCronetNamespace([[maybe_unused]] const Context& ctx) {
-  Namespace ns("cronet", /*is_isolated=*/true, /*is_visible=*/true);
-  ns.AddSearchPath("/apex/com.android.cronet/${LIB}", AsanPath::SAME_PATH);
+Namespace BuildApexDefaultNamespace([[maybe_unused]] const Context& ctx,
+                                    const ApexInfo& apex_info) {
+  Namespace ns("default", /*is_isolated=*/true, /*is_visible=*/false);
+
+  ns.AddSearchPath(apex_info.path + "/${LIB}", AsanPath::SAME_PATH);
+  ns.AddPermittedPath(apex_info.path + "/${LIB}", AsanPath::SAME_PATH);
   ns.AddPermittedPath("/system/${LIB}");
 
-  ns.GetLink(ctx.GetSystemNamespaceName())
-      .AddSharedLib(
-          "libandroid.so", "libc.so", "libdl.so", "libm.so", "liblog.so");
+  ns.AddRequires(apex_info.require_libs);
+  ns.AddProvides(apex_info.provide_libs);
+
   return ns;
 }
 }  // namespace contents
