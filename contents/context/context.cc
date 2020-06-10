@@ -18,6 +18,7 @@
 
 #include <android-base/strings.h>
 
+#include "linkerconfig/environment.h"
 #include "linkerconfig/log.h"
 #include "linkerconfig/namespacebuilder.h"
 #include "linkerconfig/variables.h"
@@ -42,6 +43,10 @@ bool Context::IsProductSection() const {
   return current_section_ == SectionType::Product;
 }
 
+bool Context::IsUnrestrictedSection() const {
+  return current_section_ == SectionType::Unrestricted;
+}
+
 bool Context::IsDefaultConfig() const {
   return current_linkerconfig_type_ == LinkerConfigType::Default;
 }
@@ -50,6 +55,7 @@ bool Context::IsLegacyConfig() const {
   return current_linkerconfig_type_ == LinkerConfigType::Legacy;
 }
 
+// TODO(b/153944540) : Remove VNDK Lite supports
 bool Context::IsVndkliteConfig() const {
   return current_linkerconfig_type_ == LinkerConfigType::Vndklite;
 }
@@ -116,6 +122,21 @@ std::string Var(const std::string& name, const std::string& default_value) {
     return *val;
   }
   return default_value;
+}
+
+bool Context::IsSectionVndkEnabled() const {
+  if (!IsVndkAvailable() || android::linkerconfig::modules::IsVndkLiteDevice()) {
+    return false;
+  }
+  if (IsVendorSection()) {
+    return true;
+  }
+  if (IsProductSection() &&
+      android::linkerconfig::modules::IsProductVndkVersionDefined()) {
+    return true;
+  }
+
+  return false;
 }
 
 }  // namespace contents

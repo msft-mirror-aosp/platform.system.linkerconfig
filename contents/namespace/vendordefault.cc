@@ -17,8 +17,10 @@
 // This is the default linker namespace for a vendor process (a process started
 // from /vendor/bin/*).
 
-#include "linkerconfig/environment.h"
 #include "linkerconfig/namespacebuilder.h"
+
+#include "linkerconfig/common.h"
+#include "linkerconfig/environment.h"
 
 using android::linkerconfig::modules::AsanPath;
 using android::linkerconfig::modules::GetVendorVndkVersion;
@@ -27,16 +29,31 @@ using android::linkerconfig::modules::Namespace;
 namespace {
 
 // Keep in sync with the "platform" namespace in art/build/apex/ld.config.txt.
-const std::vector<std::string> kVndkLiteArtLibs = {
+const std::vector<std::string> kVndkLiteVendorRequires = {
+    // Keep in sync with the "platform" namespace in art/build/apex/ld.config.txt.
     "libdexfile_external.so",
     "libdexfiled_external.so",
     "libnativebridge.so",
     "libnativehelper.so",
     "libnativeloader.so",
+    "libandroidicu.so",
+    // TODO(b/122876336): Remove libpac.so once it's migrated to Webview
+    "libpac.so",
     // TODO(b/120786417 or b/134659294): libicuuc.so
     // and libicui18n.so are kept for app compat.
     "libicui18n.so",
     "libicuuc.so",
+    // resolv
+    "libnetd_resolv.so",
+    // nn
+    "libneuralnetworks.so",
+    // statsd
+    "libstatspull.so",
+    "libstatssocket.so",
+    // adbd
+    "libadb_pairing_auth.so",
+    "libadb_pairing_connection.so",
+    "libadb_pairing_server.so",
 };
 
 }  // namespace
@@ -85,10 +102,14 @@ Namespace BuildVendorDefaultNamespace([[maybe_unused]] const Context& ctx) {
   ns.AddPermittedPath("/system/vendor", AsanPath::NONE);
 
   if (is_vndklite) {
-    ns.AddRequires(kVndkLiteArtLibs);
+    // Because vendor-default NS works like system-default NS for VNDK-lite
+    // devices the requires/provides are added just like system-default.
+    ns.AddRequires(kVndkLiteVendorRequires);
+    ns.AddProvides(GetSystemStubLibraries());
   } else {
     ns.GetLink(ctx.GetSystemNamespaceName())
-        .AddSharedLib(Var("LLNDK_LIBRARIES_VENDOR"));
+        .AddSharedLib(
+            {Var("LLNDK_LIBRARIES_VENDOR"), Var("SANITIZER_DEFAULT_VENDOR")});
     ns.GetLink("vndk").AddSharedLib({Var("VNDK_SAMEPROCESS_LIBRARIES_VENDOR"),
                                      Var("VNDK_CORE_LIBRARIES_VENDOR")});
     if (android::linkerconfig::modules::IsVndkInSystemNamespace()) {
