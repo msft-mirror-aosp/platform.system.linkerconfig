@@ -47,11 +47,7 @@ android::linkerconfig::modules::Configuration CreateBaseConfiguration(
     Context& ctx) {
   std::vector<Section> sections;
 
-  if (android::linkerconfig::modules::IsVndkLiteDevice()) {
-    ctx.SetCurrentLinkerConfigType(LinkerConfigType::Vndklite);
-  } else {
-    ctx.SetCurrentLinkerConfigType(LinkerConfigType::Default);
-  }
+  ctx.SetCurrentLinkerConfigType(LinkerConfigType::Default);
 
   // Don't change the order here. The first pattern that matches with the
   // absolute path of an executable is selected.
@@ -79,6 +75,11 @@ android::linkerconfig::modules::Configuration CreateBaseConfiguration(
       {"/data/nativetest/unrestricted", "unrestricted"},
       {"/data/nativetest64/unrestricted", "unrestricted"},
 
+      // Create isolated namespace for development purpose.
+      // This isolates binary from the system so binaries and libraries from
+      // this location can be separated from system libraries.
+      {"/data/local/tmp/isolated", "isolated"},
+
       // TODO(b/123864775): Ensure tests are run from /data/nativetest{,64} or
       // (if necessary) the unrestricted subdirs above. Then clean this up.
       {"/data/local/tmp", "unrestricted"},
@@ -92,8 +93,7 @@ android::linkerconfig::modules::Configuration CreateBaseConfiguration(
   sections.emplace_back(BuildSystemSection(ctx));
   if (ctx.IsVndkAvailable()) {
     sections.emplace_back(BuildVendorSection(ctx));
-    if (android::linkerconfig::modules::IsProductVndkVersionDefined() &&
-        !android::linkerconfig::modules::IsVndkLiteDevice()) {
+    if (android::linkerconfig::modules::IsProductVndkVersionDefined()) {
       sections.emplace_back(BuildProductSection(ctx));
     } else {
       RedirectSection(dirToSection, "product", "system");
@@ -105,6 +105,8 @@ android::linkerconfig::modules::Configuration CreateBaseConfiguration(
 
   sections.emplace_back(BuildUnrestrictedSection(ctx));
   sections.emplace_back(BuildPostInstallSection(ctx));
+
+  sections.emplace_back(BuildIsolatedSection(ctx));
 
   return android::linkerconfig::modules::Configuration(std::move(sections),
                                                        dirToSection);

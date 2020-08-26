@@ -27,6 +27,11 @@ if [[ $(basename $0) == "rundiff.sh" ]]; then
     exit 1
   fi
   $ANDROID_BUILD_TOP/build/soong/soong_ui.bash --make-mode linkerconfig conv_apex_manifest
+else
+  # workaround to use host tools(conv_apex_manifest, linkerconfig) on build server
+  unzip -qqo linkerconfig_diff_test_host_tools.zip -d tools
+  export PATH=$(realpath tools)/bin:$PATH
+  export LD_LIBRARY_PATH=$(realpath tools)/lib64:$LD_LIBRARY_PATH
 fi
 
 # $1: tmp root
@@ -40,45 +45,22 @@ function run_linkerconfig_to {
   # delete old output
   rm -rf $1
 
-  # prepare root with no apexes
   TMP_ROOT=$(mktemp -d -t linkerconfig-root-XXXXXXXX)
-  cp -R ./testdata/root/!(apex) $TMP_ROOT
 
+  ./testdata/prepare_root.sh --in testdata/root --out $TMP_ROOT
   mkdir -p $1/stage0
   linkerconfig -v R -r $TMP_ROOT -t $1/stage0
 
-  # activate bootstrap apexes
-  mkdir -p $TMP_ROOT/apex
-  activate $TMP_ROOT com.android.art
-  activate $TMP_ROOT com.android.i18n
-  # activate $TMP_ROOT com.android.os.statsd
-  activate $TMP_ROOT com.android.runtime
-  activate $TMP_ROOT com.android.tzdata
-  activate $TMP_ROOT com.android.vndk.vR
-
-  find $TMP_ROOT -name apex_manifest.json -exec sh -c '$2 proto $1 -o ${1%.json}.pb' sh  {} conv_apex_manifest \;
-  find $TMP_ROOT -name apex_manifest.json -exec sh -c 'mkdir `dirname $1`/lib' sh  {}  \;
-
+  ./testdata/prepare_root.sh --bootstrap --in testdata/root --out $TMP_ROOT
   mkdir -p $1/stage1
   linkerconfig -v R -r $TMP_ROOT -t $1/stage1
 
-  # clean up testdata root
-  rm -iRf $TMP_ROOT
-
-  # prepare root with all apexes
-  TMP_ROOT=$(mktemp -d -t linkerconfig-root-XXXXXXXX)
-  cp -R ./testdata/root/* $TMP_ROOT
-  find $TMP_ROOT -name apex_manifest.json -exec sh -c '$2 proto $1 -o ${1%.json}.pb' sh  {} conv_apex_manifest \;
-  find $TMP_ROOT -name apex_manifest.json -exec sh -c 'mkdir `dirname $1`/lib' sh  {}  \;
-
+  ./testdata/prepare_root.sh --all --in testdata/root --out $TMP_ROOT
   mkdir -p $1/stage2
   linkerconfig -v R -r $TMP_ROOT -t $1/stage2
 
   mkdir -p $1/product-enabled
   linkerconfig -v R -p R -r $TMP_ROOT -t $1/product-enabled
-
-  mkdir -p $1/vndk-lite
-  linkerconfig -v R -e -r $TMP_ROOT -t $1/vndk-lite
 
   rm -iRf $TMP_ROOT/apex/com.android.vndk.vR
   mkdir -p $1/legacy
