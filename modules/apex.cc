@@ -16,8 +16,11 @@
 #include "linkerconfig/apex.h"
 
 #include <algorithm>
+#include <cstring>
+#include <regex>
 #include <set>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <android-base/file.h>
@@ -25,7 +28,6 @@
 #include <android-base/strings.h>
 #include <apexutil.h>
 #include <unistd.h>
-#include <vector>
 
 #include "linkerconfig/configparser.h"
 #include "linkerconfig/environment.h"
@@ -36,6 +38,7 @@
 #include "com_android_apex.h"
 
 using android::base::ErrnoError;
+using android::base::Error;
 using android::base::ReadFileToString;
 using android::base::Result;
 using android::base::StartsWith;
@@ -76,13 +79,64 @@ std::vector<std::string> Intersect(const std::vector<std::string>& as,
   return intersect;
 }
 
+bool IsValidForPath(const uint_fast8_t c) {
+  if (c >= 'a' && c <= 'z') return true;
+  if (c >= 'A' && c <= 'Z') return true;
+  if (c >= '0' && c <= '9') return true;
+  if (c == '-' || c == '_' || c == '.') return true;
+  return false;
+}
+
+Result<void> VerifyPath(const std::string& path) {
+  const size_t length = path.length();
+  constexpr char lib_dir[] = "${LIB}";
+  constexpr size_t lib_dir_len = (sizeof lib_dir) - 1;
+  const std::string_view path_view(path);
+
+  if (length == 0) {
+    return Error() << "Empty path is not allowed";
+  }
+
+  for (size_t i = 0; i < length; i++) {
+    uint_fast8_t current_char = path[i];
+    if (current_char == '/') {
+      i++;
+      if (i >= length) {
+        return {};
+      } else if (path[i] == '/') {
+        return Error() << "'/' should not appear twice in " << path;
+      } else if (i + lib_dir_len <= length &&
+                 path_view.substr(i, lib_dir_len) == lib_dir) {
+        i += lib_dir_len - 1;
+      } else {
+        for (; i < length; i++) {
+          current_char = path[i];
+          if (current_char == '/') {
+            i--;
+            break;
+          }
+
+          if (!IsValidForPath(current_char)) {
+            return Error() << "Invalid char '" << current_char << "' in "
+                           << path;
+          }
+        }
+      }
+    } else {
+      return Error() << "Invalid char '" << current_char << "' in " << path
+                     << " at " << i;
+    }
+  }
+
+  return {};
+}
 }  // namespace
 
 namespace android {
 namespace linkerconfig {
 namespace modules {
 
-std::map<std::string, ApexInfo> ScanActiveApexes(const std::string& root) {
+Result<std::map<std::string, ApexInfo>> ScanActiveApexes(const std::string& root) {
   std::map<std::string, ApexInfo> apexes;
   const auto apex_root = root + apex::kApexRoot;
   for (const auto& [path, manifest] : apex::GetActivePackages(apex_root)) {
@@ -100,10 +154,18 @@ std::map<std::string, ApexInfo> ScanActiveApexes(const std::string& root) {
       if (linker_config.ok()) {
         permitted_paths = {linker_config->permittedpaths().begin(),
                            linker_config->permittedpaths().end()};
+        for (const std::string& path : permitted_paths) {
+          Result<void> verify_permitted_path = VerifyPath(path);
+          if (!verify_permitted_path.ok()) {
+            return Error() << "Failed to validate path from APEX linker config"
+                           << linker_config_path << " : "
+                           << verify_permitted_path.error();
+          }
+        }
         visible = linker_config->visible();
       } else {
-        LOG(ERROR) << "Failed to read APEX linker config : "
-                   << linker_config.error();
+        return Error() << "Failed to read APEX linker config : "
+                       << linker_config.error();
       }
     }
 
@@ -132,7 +194,7 @@ std::map<std::string, ApexInfo> ScanActiveApexes(const std::string& root) {
             info.getPreinstalledModulePath();
       }
     } else {
-      PLOG(ERROR) << "Can't read " << info_list_file;
+      return ErrnoError() << "Can't read " << info_list_file;
     }
 
     const std::string public_libraries_file =
@@ -147,8 +209,10 @@ std::map<std::string, ApexInfo> ScanActiveApexes(const std::string& root) {
         apex.public_libs = Intersect(apex.provide_libs, *public_libraries);
       }
     } else {
-      LOG(ERROR) << "Can't read " << public_libraries_file << ": "
-                 << public_libraries.error();
+      // Do not fail when public.libraries.txt is missing for minimal Android
+      // environment with no ART.
+      LOG(WARNING) << "Can't read " << public_libraries_file << ": "
+                   << public_libraries.error();
     }
   }
 
