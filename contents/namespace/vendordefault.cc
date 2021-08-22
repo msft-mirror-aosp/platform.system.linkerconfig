@@ -28,8 +28,13 @@ using android::linkerconfig::modules::Namespace;
 namespace android {
 namespace linkerconfig {
 namespace contents {
-Namespace BuildVendorDefaultNamespace([[maybe_unused]] const Context& ctx) {
-  Namespace ns("default", /*is_isolated=*/true, /*is_visible=*/true);
+Namespace BuildVendorDefaultNamespace(const Context& ctx) {
+  return BuildVendorNamespace(ctx, "default");
+}
+
+Namespace BuildVendorNamespace([[maybe_unused]] const Context& ctx,
+                               const std::string& name) {
+  Namespace ns(name, /*is_isolated=*/true, /*is_visible=*/true);
 
   ns.AddSearchPath("/odm/${LIB}");
   ns.AddSearchPath("/vendor/${LIB}");
@@ -51,7 +56,9 @@ Namespace BuildVendorDefaultNamespace([[maybe_unused]] const Context& ctx) {
   }
 
   ns.AddRequires(std::vector{"libneuralnetworks.so"});
-  ns.AddRequires(std::vector{"libneuralnetworks_shim.so"});
+  ns.AddRequires(ctx.GetVendorRequireLibs());
+  ns.AddProvides(ctx.GetVendorProvideLibs());
+
   return ns;
 }
 }  // namespace contents
