@@ -100,8 +100,7 @@ inline void ParseLinkList(const std::vector<std::string>& property_descs,
     EXPECT_FALSE(MapContainsKey(current_namespace.links, namespace_to))
         << "Link to " << namespace_to << " is already defined : " << line;
     EXPECT_TRUE(MapContainsKey(current_section.namespaces, namespace_to))
-        << "Target namespace " << namespace_to
-        << " is not defined in section : " << line;
+        << "Target namespace is not defined in section : " << line;
 
     current_namespace.links[namespace_to].from = &current_namespace;
     current_namespace.links[namespace_to].to =
