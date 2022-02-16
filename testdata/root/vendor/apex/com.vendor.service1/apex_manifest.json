@@ -7,10 +7,6 @@
     "libc.so",
     "libdl.so",
     "liblog.so",
-    "libm.so",
-    "libvendorprovide.so"
-  ],
-  "provideNativeLibs": [
-    "libtest.so"
+    "libm.so"
   ]
 }
