@@ -37,7 +37,6 @@ Section BuildVendorSection(Context& ctx) {
   namespaces.emplace_back(BuildVendorDefaultNamespace(ctx));
   namespaces.emplace_back(BuildVndkNamespace(ctx, VndkUserPartition::Vendor));
   namespaces.emplace_back(BuildSystemNamespace(ctx));
-  namespaces.emplace_back(BuildRsNamespace(ctx));
 
   if (android::linkerconfig::modules::IsVndkInSystemNamespace()) {
     namespaces.emplace_back(BuildVndkInSystemNamespace(ctx));
@@ -52,18 +51,7 @@ Section BuildVendorSection(Context& ctx) {
     }
   }
 
-  android::linkerconfig::modules::LibProviders libs_providers = {};
-  if (ctx.IsVndkAvailable()) {
-    libs_providers[":vndk"] = android::linkerconfig::modules::LibProvider{
-        "vndk",
-        std::bind(BuildVndkNamespace, ctx, VndkUserPartition::Vendor),
-        {Var("VNDK_SAMEPROCESS_LIBRARIES_VENDOR"),
-         Var("VNDK_CORE_LIBRARIES_VENDOR")},
-    };
-  }
-
-  return BuildSection(
-      ctx, "vendor", std::move(namespaces), visible_apexes, libs_providers);
+  return BuildSection(ctx, "vendor", std::move(namespaces), visible_apexes);
 }
 }  // namespace contents
 }  // namespace linkerconfig
