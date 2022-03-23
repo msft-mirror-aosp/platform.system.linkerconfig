@@ -54,10 +54,6 @@ namespace modules {
 
 void InitializeWithApex(Namespace& ns, const ApexInfo& apex_info) {
   ns.AddSearchPath(apex_info.path + "/${LIB}");
-  if (apex_info.InVendor()) {
-    ns.AddSearchPath(apex_info.path + "/${LIB}/hw");
-    ns.AddSearchPath(apex_info.path + "/${LIB}/egl");
-  }
   ns.AddPermittedPath(apex_info.path + "/${LIB}");
   ns.AddPermittedPath("/system/${LIB}");
   for (const auto& permitted_path : apex_info.permitted_paths) {
