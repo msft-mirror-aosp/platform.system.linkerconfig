@@ -31,8 +31,7 @@ namespace contents {
 // libdl.so) and applicable libclang_rt.*.
 void AddStandardSystemLinks(const Context& ctx, modules::Section* section);
 
-void SetupSystemPermittedPaths(modules::Namespace* ns);
-
+std::vector<std::string> GetSystemStubLibraries();
 }  // namespace contents
 }  // namespace linkerconfig
 }  // namespace android

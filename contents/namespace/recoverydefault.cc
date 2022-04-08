@@ -18,6 +18,7 @@
 #include "linkerconfig/namespace.h"
 #include "linkerconfig/namespacebuilder.h"
 
+using android::linkerconfig::modules::AsanPath;
 using android::linkerconfig::modules::Namespace;
 
 namespace android {
@@ -26,7 +27,7 @@ namespace contents {
 Namespace BuildRecoveryDefaultNamespace([[maybe_unused]] const Context& ctx) {
   Namespace ns("default");
 
-  ns.AddSearchPath("/system/${LIB}");
+  ns.AddSearchPath("/system/${LIB}", AsanPath::NONE);
 
   return ns;
 }

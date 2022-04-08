@@ -15,14 +15,12 @@
  */
 #include "linkerconfig/namespacebuilder.h"
 
-#include <vector>
-
 #include "linkerconfig/apex.h"
 #include "linkerconfig/environment.h"
 #include "linkerconfig/namespace.h"
 
 using android::linkerconfig::modules::ApexInfo;
-using android::linkerconfig::modules::InitializeWithApex;
+using android::linkerconfig::modules::AsanPath;
 using android::linkerconfig::modules::Namespace;
 
 namespace android {
@@ -31,12 +29,13 @@ namespace contents {
 Namespace BuildApexDefaultNamespace([[maybe_unused]] const Context& ctx,
                                     const ApexInfo& apex_info) {
   Namespace ns("default", /*is_isolated=*/true, /*is_visible=*/false);
-  InitializeWithApex(ns, apex_info);
 
-  // non-system "default" namespace should link Sanitizer
-  if (!apex_info.InSystem()) {
-    ns.AddRequires(std::vector{":sanitizer"});
-  }
+  ns.AddSearchPath(apex_info.path + "/${LIB}", AsanPath::SAME_PATH);
+  ns.AddPermittedPath(apex_info.path + "/${LIB}", AsanPath::SAME_PATH);
+  ns.AddPermittedPath("/system/${LIB}");
+
+  ns.AddRequires(apex_info.require_libs);
+  ns.AddProvides(apex_info.provide_libs);
 
   return ns;
 }

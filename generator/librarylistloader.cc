@@ -55,6 +55,17 @@ Result<LibraryList> GetLibrariesFromFile(std::string file_path) {
     }
   }
 
+  // TODO (b/122954981) : Remove this part when VNDK Lite is deprecated
+  // In case of VNDK-lite devices, libz should be included in LLNDK rather than
+  // VNDK-SP libraries
+  if (android::linkerconfig::modules::IsVndkLiteDevice()) {
+    if (file_path.find("llndk") != std::string::npos) {
+      library_list.insert("libz.so");
+    } else if (file_path.find("vndksp") != std::string::npos) {
+      library_list.erase("libz.so");
+    }
+  }
+
   library_file_cache.insert({file_path, library_list});
 
   return library_list;
@@ -64,7 +75,7 @@ Result<LibraryList> GetLibrariesFromFile(std::string file_path) {
 namespace android {
 namespace linkerconfig {
 namespace generator {
-std::string GetLibrariesString(const std::string& library_file_path) {
+std::string GetLibrariesString(std::string library_file_path) {
   auto library_list_result = GetLibrariesFromFile(library_file_path);
   if (library_list_result.ok()) {
     return android::base::Join(*library_list_result, ':');
@@ -75,9 +86,8 @@ std::string GetLibrariesString(const std::string& library_file_path) {
   }
 }
 
-std::string GetPublicLibrariesString(
-    const std::string& library_file_path,
-    const std::string& private_library_file_path) {
+std::string GetPublicLibrariesString(std::string library_file_path,
+                                     std::string private_library_file_path) {
   auto library_list = GetLibrariesFromFile(library_file_path);
   auto private_library_list = GetLibrariesFromFile(private_library_file_path);
 
@@ -105,9 +115,8 @@ std::string GetPublicLibrariesString(
   return android::base::Join(public_library_list, ':');
 }
 
-std::string GetPrivateLibrariesString(
-    const std::string& library_file_path,
-    const std::string& private_library_file_path) {
+std::string GetPrivateLibrariesString(std::string library_file_path,
+                                      std::string private_library_file_path) {
   auto library_list = GetLibrariesFromFile(library_file_path);
   auto private_library_list = GetLibrariesFromFile(private_library_file_path);
 

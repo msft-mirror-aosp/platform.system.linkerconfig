@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-#include "linkerconfig/sectionbuilder.h"
-
 #include "linkerconfig/common.h"
 #include "linkerconfig/context.h"
 #include "linkerconfig/environment.h"
 #include "linkerconfig/namespacebuilder.h"
 #include "linkerconfig/section.h"
+#include "linkerconfig/sectionbuilder.h"
 
 using android::linkerconfig::contents::SectionType;
 using android::linkerconfig::modules::Namespace;
@@ -43,17 +42,18 @@ Section BuildSystemSection(Context& ctx) {
           BuildVndkNamespace(ctx, VndkUserPartition::Product));
     }
   }
-
-  std::set<std::string> visible_apexes;
-
-  // APEXes with JNI libs or public libs should be visible
-  for (const auto& apex : ctx.GetApexModules()) {
-    if (apex.jni_libs.size() > 0 || apex.public_libs.size() > 0) {
-      visible_apexes.insert(apex.name);
-    }
-  }
-
-  return BuildSection(ctx, "system", std::move(namespaces), visible_apexes);
+  return BuildSection(ctx,
+                      "system",
+                      std::move(namespaces),
+                      {
+                          "com.android.art",
+                          "com.android.neuralnetworks",
+                          "com.android.runtime",
+                          "com.android.cronet",
+                          "com.android.media",
+                          "com.android.conscrypt",
+                          "com.android.os.statsd",
+                      });
 }
 }  // namespace contents
 }  // namespace linkerconfig
