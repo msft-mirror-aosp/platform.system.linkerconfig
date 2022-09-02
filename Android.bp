@@ -29,9 +29,9 @@ cc_defaults {
     static_libs: [
         "libapexutil",
         "libbase",
-        "liblog",
+        "liblog_for_runtime_apex",
         "libprotobuf-cpp-lite",
-        "libxml2",
+        "libtinyxml2",
         "lib_linker_config_proto_lite",
     ],
     target: {
@@ -65,7 +65,7 @@ cc_library_static {
     srcs: [
         "modules/*.cc",
     ],
-    generated_sources: ["apex-info-list"],
+    generated_sources: ["apex-info-list-tinyxml"],
     apex_available: [
         "//apex_available:platform",
         "com.android.runtime",
@@ -200,6 +200,8 @@ cc_test {
 cc_test {
     name: "linkerconfig_contents_fulltest",
     defaults: [ "linkerconfig_test_defaults" ],
+    // TODO(b/231993627): Reenable isolated:true by deleting the explicit disable below
+    isolated: false,
     local_include_dirs: [
         "contents/tests/configuration/include",
     ],
@@ -207,6 +209,7 @@ cc_test {
         "contents/tests/configuration/*_test.cc",
     ],
     static_libs: [
+        "libgmock",
         "linkerconfig_modules",
         "linkerconfig_contents",
     ],
