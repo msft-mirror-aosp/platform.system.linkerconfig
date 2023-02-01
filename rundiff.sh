@@ -89,6 +89,10 @@ function run_linkerconfig_to {
   mkdir -p $1/product-enabled
   linkerconfig -v R -p R -r $TMP_ROOT -t $1/product-enabled
 
+  # skip prepare_root (reuse the previous setup)
+  mkdir -p $1/gen-only-a-single-apex
+  linkerconfig -v R -r $TMP_ROOT --apex com.vendor.service2 -t $1/gen-only-a-single-apex
+
   # skip prepare_root in order to use the same apexs
   # but with system/etc/vndkcorevariant.libraries.txt
   vndk_core_variant_libs_file=$TMP_ROOT/system/etc/vndkcorevariant.libraries.txt
