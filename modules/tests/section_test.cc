@@ -43,9 +43,7 @@ namespace.default.asan.permitted.paths = /data/asan/permitted_path1
 namespace.default.asan.permitted.paths += /permitted_path1
 namespace.default.asan.permitted.paths += /apex/permitted_path2
 namespace.default.links = namespace1,namespace2
-namespace.default.link.namespace1.shared_libs = lib1.so
-namespace.default.link.namespace1.shared_libs += lib2.so
-namespace.default.link.namespace1.shared_libs += lib3.so
+namespace.default.link.namespace1.shared_libs = lib1.so:lib2.so:lib3.so
 namespace.default.link.namespace2.allow_all_shared_libs = true
 namespace.namespace1.isolated = false
 namespace.namespace1.search.paths = /search_path1
@@ -59,9 +57,7 @@ namespace.namespace1.asan.permitted.paths = /data/asan/permitted_path1
 namespace.namespace1.asan.permitted.paths += /permitted_path1
 namespace.namespace1.asan.permitted.paths += /apex/permitted_path2
 namespace.namespace1.links = default,namespace2
-namespace.namespace1.link.default.shared_libs = lib1.so
-namespace.namespace1.link.default.shared_libs += lib2.so
-namespace.namespace1.link.default.shared_libs += lib3.so
+namespace.namespace1.link.default.shared_libs = lib1.so:lib2.so:lib3.so
 namespace.namespace1.link.namespace2.allow_all_shared_libs = true
 namespace.namespace2.isolated = false
 namespace.namespace2.search.paths = /search_path1
@@ -213,13 +209,12 @@ TEST(linkerconfig_section, ignore_unmet_requirements) {
 
 TEST(linkerconfig_section, resolve_section_with_apex) {
   BaseContext ctx;
-  ctx.AddApexModule(ApexInfo(
-      "foo", "", {"a.so"}, {"b.so"}, {}, {}, {}, true, true, false, false));
-  ctx.AddApexModule(
-      ApexInfo("bar", "", {"b.so"}, {}, {}, {}, {}, true, true, false, false));
-  ctx.AddApexModule(ApexInfo(
-      "baz", "", {"c.so"}, {"a.so"}, {}, {}, {}, true, true, false, false));
-
+  ctx.SetApexModules(
+      {ApexInfo(
+           "foo", "", {"a.so"}, {"b.so"}, {}, {}, {}, true, true, false, false),
+       ApexInfo("bar", "", {"b.so"}, {}, {}, {}, {}, true, true, false, false),
+       ApexInfo(
+           "baz", "", {"c.so"}, {"a.so"}, {}, {}, {}, true, true, false, false)});
   std::vector<Namespace> namespaces;
   Namespace& default_ns = namespaces.emplace_back("default");
   default_ns.AddRequires(std::vector{"a.so", "b.so"});
