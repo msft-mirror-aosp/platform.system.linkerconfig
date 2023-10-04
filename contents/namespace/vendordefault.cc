@@ -46,9 +46,10 @@ Namespace BuildVendorNamespace([[maybe_unused]] const Context& ctx,
   ns.AddPermittedPath("/vendor");
   ns.AddPermittedPath("/system/vendor");
 
-  if (ctx.IsVndkAvailable()) {
-    ns.GetLink("rs").AddSharedLib("libRS_internal.so");
-    ns.AddRequires(base::Split(Var("LLNDK_LIBRARIES_VENDOR", ""), ":"));
+  ns.GetLink("rs").AddSharedLib("libRS_internal.so");
+  ns.AddRequires(base::Split(Var("LLNDK_LIBRARIES_VENDOR", ""), ":"));
+
+  if (android::linkerconfig::modules::IsVendorVndkVersionDefined()) {
     ns.GetLink(ctx.GetSystemNamespaceName())
         .AddSharedLib(Var("SANITIZER_DEFAULT_VENDOR"));
     ns.GetLink("vndk").AddSharedLib({Var("VNDK_SAMEPROCESS_LIBRARIES_VENDOR"),
@@ -61,6 +62,11 @@ Namespace BuildVendorNamespace([[maybe_unused]] const Context& ctx,
 
   ns.AddRequires(ctx.GetVendorRequireLibs());
   ns.AddProvides(ctx.GetVendorProvideLibs());
+  // TODO(b/296491928) Vendor APEX should use its own libbinder_ndk when VNDK is
+  // deprecated.
+  if (!android::linkerconfig::modules::IsVendorVndkVersionDefined()) {
+    ns.AddProvides(std::vector{"libbinder.so"});
+  }
   return ns;
 }
 }  // namespace contents

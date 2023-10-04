@@ -79,30 +79,31 @@ Section BuildApexDefaultSection(Context& ctx, const ApexInfo& apex_info) {
 
   // Vendor APEXes can use libs provided by "vendor"
   // and Product APEXes can use libs provided by "product"
-  if (ctx.IsVndkAvailable()) {
+  if (android::linkerconfig::modules::IsTreblelizedDevice()) {
     if (apex_info.InVendor()) {
       namespaces.emplace_back(BuildRsNamespace(ctx));
       auto vendor = BuildVendorNamespace(ctx, "vendor");
       if (!vendor.GetProvides().empty()) {
         namespaces.emplace_back(std::move(vendor));
       }
-      if (android::linkerconfig::modules::IsVndkInSystemNamespace()) {
-        namespaces.emplace_back(BuildVndkInSystemNamespace(ctx));
-      } else {
+      if (android::linkerconfig::modules::IsVendorVndkVersionDefined()) {
         namespaces.emplace_back(
             BuildVndkNamespace(ctx, VndkUserPartition::Vendor));
+        if (android::linkerconfig::modules::IsVndkInSystemNamespace()) {
+          namespaces.emplace_back(BuildVndkInSystemNamespace(ctx));
+        }
       }
     } else if (apex_info.InProduct()) {
       auto product = BuildProductNamespace(ctx, "product");
       if (!product.GetProvides().empty()) {
         namespaces.emplace_back(std::move(product));
       }
-
-      if (android::linkerconfig::modules::IsVndkInSystemNamespace()) {
-        namespaces.emplace_back(BuildVndkInSystemNamespace(ctx));
-      } else {
+      if (android::linkerconfig::modules::IsProductVndkVersionDefined()) {
         namespaces.emplace_back(
             BuildVndkNamespace(ctx, VndkUserPartition::Product));
+        if (android::linkerconfig::modules::IsVndkInSystemNamespace()) {
+          namespaces.emplace_back(BuildVndkInSystemNamespace(ctx));
+        }
       }
     }
   }
@@ -125,7 +126,15 @@ Section BuildApexDefaultSection(Context& ctx, const ApexInfo& apex_info) {
         {},
     }};
   }
-  if (ctx.IsVndkAvailable()) {
+
+  bool in_vendor_with_vndk_enabled =
+      !apex_info.InProduct() &&
+      android::linkerconfig::modules::IsVendorVndkVersionDefined();
+  bool in_product_with_vndk_enabled =
+      apex_info.InProduct() &&
+      android::linkerconfig::modules::IsProductVndkVersionDefined();
+
+  if (in_vendor_with_vndk_enabled || in_product_with_vndk_enabled) {
     VndkUserPartition user_partition = VndkUserPartition::Vendor;
     std::string user_partition_suffix = "VENDOR";
     if (apex_info.InProduct()) {
