@@ -33,6 +33,7 @@ using android::linkerconfig::modules::LibProviders;
 using android::linkerconfig::modules::Namespace;
 using android::linkerconfig::modules::SharedLibs;
 using android::linkerconfig::modules::Section;
+using android::linkerconfig::modules::SharedLibs;
 
 namespace android {
 namespace linkerconfig {
@@ -145,6 +146,10 @@ Section BuildApexDefaultSection(Context& ctx, const ApexInfo& apex_info) {
         std::bind(BuildVndkNamespace, ctx, user_partition),
         SharedLibs{{Var("VNDK_SAMEPROCESS_LIBRARIES_" + user_partition_suffix)}},
     }};
+  }
+
+  if (apex_info.InVendor()) {
+    AddVendorSubdirNamespaceProviders(ctx, libs_providers);
   }
 
   return BuildSection(
