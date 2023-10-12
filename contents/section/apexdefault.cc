@@ -31,6 +31,7 @@ using android::linkerconfig::modules::ApexInfo;
 using android::linkerconfig::modules::LibProvider;
 using android::linkerconfig::modules::LibProviders;
 using android::linkerconfig::modules::Namespace;
+using android::linkerconfig::modules::SharedLibs;
 using android::linkerconfig::modules::Section;
 
 namespace android {
@@ -116,13 +117,13 @@ Section BuildApexDefaultSection(Context& ctx, const ApexInfo& apex_info) {
     libs_providers[":sphal"] = {LibProvider{
         "vendor",
         std::bind(BuildVendorNamespace, ctx, "vendor"),
-        {},
+        SharedLibs{{}},
     }};
   } else {
     libs_providers[":sphal"] = {LibProvider{
         "sphal",
         std::bind(BuildSphalNamespace, ctx),
-        {},
+        SharedLibs{{}},
     }};
   }
   if (ctx.IsVndkAvailable()) {
@@ -136,13 +137,13 @@ Section BuildApexDefaultSection(Context& ctx, const ApexInfo& apex_info) {
         ctx.GetSystemNamespaceName(),
         std::bind(BuildApexPlatformNamespace,
                   ctx),  // "system" should be available
-        {Var("SANITIZER_DEFAULT_" + user_partition_suffix)},
+        SharedLibs{{Var("SANITIZER_DEFAULT_" + user_partition_suffix)}},
     }};
     libs_providers[":vndk"] = GetVndkProvider(ctx, user_partition);
     libs_providers[":vndksp"] = {LibProvider{
         "vndk",
         std::bind(BuildVndkNamespace, ctx, user_partition),
-        {Var("VNDK_SAMEPROCESS_LIBRARIES_" + user_partition_suffix)},
+        SharedLibs{{Var("VNDK_SAMEPROCESS_LIBRARIES_" + user_partition_suffix)}},
     }};
   }
 
