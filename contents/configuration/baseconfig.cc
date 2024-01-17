@@ -84,6 +84,8 @@ android::linkerconfig::modules::Configuration CreateBaseConfiguration(
       // above.  Then clean this up.
       {"/data/local/tmp", "unrestricted"},
 
+      {"/data/fuzz", "fuzz"},
+
       {"/postinstall", "postinstall"},
       // Fallback entry to provide APEX namespace lookups for binaries anywhere
       // else. This must be last.
@@ -106,6 +108,8 @@ android::linkerconfig::modules::Configuration CreateBaseConfiguration(
   sections.emplace_back(BuildPostInstallSection(ctx));
 
   sections.emplace_back(BuildIsolatedSection(ctx));
+
+  sections.emplace_back(BuildFuzzSection(ctx));
 
   return android::linkerconfig::modules::Configuration(std::move(sections),
                                                        dirToSection);
