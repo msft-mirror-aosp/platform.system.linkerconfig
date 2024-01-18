@@ -48,6 +48,7 @@ SectionBuilder BuildPostInstallSection;
 SectionBuilder BuildRecoverySection;
 SectionBuilder BuildIsolatedSection;
 ApexSectionBuilder BuildApexDefaultSection;
+SectionBuilder BuildFuzzSection;
 
 std::vector<modules::LibProvider> GetVndkProvider(const Context& ctx,
                                                   VndkUserPartition partition);
