@@ -130,6 +130,21 @@ Result<void> VerifyPath(const std::string& path) {
 
   return {};
 }
+
+Result<std::set<std::string>> ReadPublicLibrariesOpt(const std::string& filepath) {
+  // Do not fail when public.libraries.txt is missing for minimal Android
+  // environment with no ART.
+  if (!PathExists(filepath)) {
+    return {};
+  }
+  // But fails with error while reading the file
+  auto public_libraries = ReadPublicLibraries(filepath);
+  if (!public_libraries.ok()) {
+    return Error() << "Can't read " << filepath << ": "
+                   << public_libraries.error();
+  }
+  return public_libraries;
+}
 }  // namespace
 
 namespace android {
@@ -187,9 +202,10 @@ Result<std::map<std::string, ApexInfo>> ScanActiveApexes(const std::string& root
   // After scanning apexes, we still need to augment ApexInfo based on other
   // input files
   // - original_path: based on /apex/apex-info-list.xml
-  // - public_libs: based on /system/etc/public.libraries.txt
+  // - public_libs: based on /{system, vendor}/etc/public.libraries.txt
 
   if (!apexes.empty()) {
+    // 1. set original_path
     const std::string info_list_file = apex_root + "/apex-info-list.xml";
     auto info_list =
         com::android::apex::readApexInfoList(info_list_file.c_str());
@@ -228,22 +244,20 @@ Result<std::map<std::string, ApexInfo>> ScanActiveApexes(const std::string& root
       return ErrnoError() << "Can't read " << info_list_file;
     }
 
-    const std::string public_libraries_file =
-        root + "/system/etc/public.libraries.txt";
-    // Do not fail when public.libraries.txt is missing for minimal Android
-    // environment with no ART.
-    if (PathExists(public_libraries_file)) {
-      auto public_libraries = ReadPublicLibraries(public_libraries_file);
-      if (!public_libraries.ok()) {
-        return Error() << "Can't read " << public_libraries_file << ": "
-                       << public_libraries.error();
-      }
-      for (auto& [name, apex] : apexes) {
-        // Only system apexes can provide public libraries.
-        if (!apex.InSystem()) {
-          continue;
-        }
-        apex.public_libs = Intersect(apex.provide_libs, *public_libraries);
+    // 2. set public_libs
+    auto system_public_libs =
+        ReadPublicLibrariesOpt(root + "/system/etc/public.libraries.txt");
+    if (!system_public_libs.ok()) return system_public_libs.error();
+
+    auto vendor_public_libs =
+        ReadPublicLibrariesOpt(root + "/vendor/etc/public.libraries.txt");
+    if (!vendor_public_libs.ok()) return vendor_public_libs.error();
+
+    for (auto& [name, apex] : apexes) {
+      if (apex.InSystem()) {
+        apex.public_libs = Intersect(apex.provide_libs, *system_public_libs);
+      } else if (apex.InVendor()) {
+        apex.public_libs = Intersect(apex.provide_libs, *vendor_public_libs);
       }
     }
   }
