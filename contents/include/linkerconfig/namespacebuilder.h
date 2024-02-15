@@ -37,6 +37,7 @@ NamespaceBuilder BuildUnrestrictedDefaultNamespace;
 NamespaceBuilder BuildPostInstallNamespace;
 NamespaceBuilder BuildRecoveryDefaultNamespace;
 NamespaceBuilder BuildIsolatedDefaultNamespace;
+NamespaceBuilder BuildFuzzDefaultNamespace;
 
 modules::Namespace BuildVendorNamespace(const Context& ctx,
                                         const std::string& name);
@@ -52,6 +53,9 @@ modules::Namespace BuildApexDefaultNamespace(const Context& ctx,
 modules::Namespace BuildApexEmptyDefaultNamespace(
     const Context& ctx, const modules::ApexInfo& apex_info);
 NamespaceBuilder BuildApexPlatformNamespace;
+
+void AddVendorSubdirNamespaceProviders(const Context& ctx,
+                                       modules::LibProviders& providers);
 
 }  // namespace contents
 }  // namespace linkerconfig

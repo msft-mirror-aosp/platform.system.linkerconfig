@@ -23,6 +23,7 @@
 #include <android-base/result.h>
 #include <android-base/strings.h>
 
+#include "linkerconfig/environment.h"
 #include "linkerconfig/log.h"
 
 using android::base::Join;
@@ -88,14 +89,15 @@ void Section::Resolve(const BaseContext& ctx,
   for (auto& ns : namespaces_) {
     for (const auto& lib : ns.GetProvides()) {
       if (auto iter = providers.find(lib); iter != providers.end()) {
-        LOG(FATAL) << fmt::format(
-            "duplicate: {} is provided by {} and {} in [{}]",
-            lib,
-            iter->second,
-            ns.GetName(),
-            name_);
+        LOG(android::base::FATAL)
+            << fmt::format("duplicate: {} is provided by {} and {} in [{}]",
+                           lib,
+                           iter->second,
+                           ns.GetName(),
+                           name_);
+      } else {
+        providers[lib] = ns.GetName();
       }
-      providers[lib] = ns.GetName();
     }
   }
 
@@ -146,7 +148,8 @@ void Section::Resolve(const BaseContext& ctx,
         for (const auto& provider : it->second) {
           // Alias is expanded to <shared_libs>.
           // For example, ":vndk" is expanded to the list of VNDK-Core/VNDK-Sp libraries
-          ns.GetLink(provider.ns).AddSharedLib(provider.shared_libs);
+          std::visit([&](auto&& mod) { mod.Apply(ns.GetLink(provider.ns)); },
+                     provider.link_modifier);
           // Add a new namespace for the alias
           add_namespace(provider.ns, provider.ns_builder);
         }

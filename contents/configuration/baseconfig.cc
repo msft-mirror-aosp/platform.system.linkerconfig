@@ -17,19 +17,12 @@
 #include "linkerconfig/baseconfig.h"
 #include "linkerconfig/environment.h"
 #include "linkerconfig/sectionbuilder.h"
+#include "linkerconfig/variables.h"
 
 using android::linkerconfig::modules::DirToSection;
 using android::linkerconfig::modules::Section;
 
 namespace {
-void RedirectSection(std::vector<DirToSection>& dir_to_section,
-                     const std::string& from, const std::string& to) {
-  for (auto& [dir, section] : dir_to_section) {
-    if (section == from) {
-      section = to;
-    }
-  }
-}
 void RemoveSection(std::vector<DirToSection>& dir_to_section,
                    const std::string& to_be_removed) {
   dir_to_section.erase(
@@ -91,6 +84,8 @@ android::linkerconfig::modules::Configuration CreateBaseConfiguration(
       // above.  Then clean this up.
       {"/data/local/tmp", "unrestricted"},
 
+      {"/data/fuzz", "fuzz"},
+
       {"/postinstall", "postinstall"},
       // Fallback entry to provide APEX namespace lookups for binaries anywhere
       // else. This must be last.
@@ -101,13 +96,9 @@ android::linkerconfig::modules::Configuration CreateBaseConfiguration(
   };
 
   sections.emplace_back(BuildSystemSection(ctx));
-  if (ctx.IsVndkAvailable()) {
+  if (android::linkerconfig::modules::IsTreblelizedDevice()) {
     sections.emplace_back(BuildVendorSection(ctx));
-    if (android::linkerconfig::modules::IsProductVndkVersionDefined()) {
-      sections.emplace_back(BuildProductSection(ctx));
-    } else {
-      RedirectSection(dirToSection, "product", "system");
-    }
+    sections.emplace_back(BuildProductSection(ctx));
   } else {
     RemoveSection(dirToSection, "product");
     RemoveSection(dirToSection, "vendor");
@@ -117,6 +108,8 @@ android::linkerconfig::modules::Configuration CreateBaseConfiguration(
   sections.emplace_back(BuildPostInstallSection(ctx));
 
   sections.emplace_back(BuildIsolatedSection(ctx));
+
+  sections.emplace_back(BuildFuzzSection(ctx));
 
   return android::linkerconfig::modules::Configuration(std::move(sections),
                                                        dirToSection);
