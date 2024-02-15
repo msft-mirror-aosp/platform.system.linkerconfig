@@ -33,17 +33,8 @@ namespace android {
 namespace linkerconfig {
 namespace modules {
 
-void Section::WriteConfig(ConfigWriter& writer) {
+void Section::WriteConfig(ConfigWriter& writer) const {
   writer.WriteLine("[" + name_ + "]");
-
-  std::sort(namespaces_.begin(),
-            namespaces_.end(),
-            [](const auto& lhs, const auto& rhs) -> bool {
-              // make "default" a smallest one
-              if (lhs.GetName() == "default") return true;
-              if (rhs.GetName() == "default") return false;
-              return lhs.GetName() < rhs.GetName();
-            });
 
   if (namespaces_.size() > 1) {
     std::vector<std::string> additional_namespaces;
@@ -56,7 +47,7 @@ void Section::WriteConfig(ConfigWriter& writer) {
                      Join(additional_namespaces, ','));
   }
 
-  for (auto& ns : namespaces_) {
+  for (const auto& ns : namespaces_) {
     ns.WriteConfig(writer);
   }
 }
@@ -160,6 +151,15 @@ void Section::Resolve(const BaseContext& ctx,
     }
     iter++;
   } while (iter != namespaces_.end());
+
+  std::sort(namespaces_.begin(),
+            namespaces_.end(),
+            [](const auto& lhs, const auto& rhs) -> bool {
+              // make "default" a smallest one
+              if (lhs.GetName() == "default") return true;
+              if (rhs.GetName() == "default") return false;
+              return lhs.GetName() < rhs.GetName();
+            });
 }
 
 Namespace* Section::GetNamespace(const std::string& namespace_name) {
