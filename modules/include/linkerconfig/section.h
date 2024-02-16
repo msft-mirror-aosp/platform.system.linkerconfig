@@ -76,7 +76,7 @@ class Section {
   Section(const Section&) = delete;
   Section(Section&&) = default;
 
-  void WriteConfig(ConfigWriter& writer);
+  void WriteConfig(ConfigWriter& writer) const;
   std::vector<std::string> GetBinaryPaths();
   std::string GetName();
 

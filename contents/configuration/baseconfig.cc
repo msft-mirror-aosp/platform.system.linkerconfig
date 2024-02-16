@@ -112,7 +112,7 @@ android::linkerconfig::modules::Configuration CreateBaseConfiguration(
   sections.emplace_back(BuildFuzzSection(ctx));
 
   return android::linkerconfig::modules::Configuration(std::move(sections),
-                                                       dirToSection);
+                                                       std::move(dirToSection));
 }
 }  // namespace contents
 }  // namespace linkerconfig
