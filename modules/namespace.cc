@@ -90,7 +90,7 @@ Link& Namespace::GetLink(const std::string& target_namespace) {
   return links_.emplace_back(name_, target_namespace);
 }
 
-void Namespace::WriteConfig(ConfigWriter& writer) {
+void Namespace::WriteConfig(ConfigWriter& writer) const {
   auto verify_result = VerifyContents();
   if (!verify_result.ok()) {
     LOG(ERROR) << "Namespace " << name_
@@ -169,7 +169,7 @@ const std::string Namespace::CreateAsanPath(const std::string& path) {
   return kDataAsanPath + path;
 }
 
-Result<void> Namespace::VerifyContents() {
+Result<void> Namespace::VerifyContents() const {
   auto apex_with_all_shared_link =
       VerifyIfApexNamespaceContainsAllSharedLink(*this);
   if (!apex_with_all_shared_link.ok()) {

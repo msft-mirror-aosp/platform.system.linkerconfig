@@ -37,7 +37,7 @@ class Configuration {
   Configuration(const Configuration&) = delete;
   Configuration(Configuration&&) = default;
 
-  void WriteConfig(ConfigWriter& writer);
+  void WriteConfig(ConfigWriter& writer) const;
 
   // For test usage
   Section* GetSection(const std::string& name);
