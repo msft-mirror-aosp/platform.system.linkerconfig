@@ -57,6 +57,14 @@ linker.config.json file is in json format which can contain properties as below.
 }
 ```
 
+### public.libraries.txt
+
+`linkerconfig` reads both `/system/etc/public.libraries.txt` and `/vendor/etc/public.libraries.txt` to identify
+libraries that are provided by APEX and accessible from apps via `libnativeloader`.
+
+`linkerconfig` generates `apex.libraries.config.txt` file which lists public libraries provided APEX. `libnativeloader`, then,
+links those libraries from classloader-namespace to providing APEXes.
+
 ## Outputs
 
 ### /linkerconfig/ld.config.txt & /linkerconfig/*/ld.config.txt

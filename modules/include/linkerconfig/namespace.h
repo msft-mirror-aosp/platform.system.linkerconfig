@@ -57,7 +57,7 @@ class Namespace {
   // it is returned, otherwise one is created and pushed back to tail.
   Link& GetLink(const std::string& target_namespace);
 
-  void WriteConfig(ConfigWriter& writer);
+  void WriteConfig(ConfigWriter& writer) const;
   void AddAllowedLib(const std::string& path);
 
   std::string GetName() const;
@@ -128,7 +128,7 @@ class Namespace {
                        const std::vector<std::string>& path_list);
   bool RequiresAsanPath(const std::string& path);
   const std::string CreateAsanPath(const std::string& path);
-  android::base::Result<void> VerifyContents();
+  android::base::Result<void> VerifyContents() const;
 };
 
 void InitializeWithApex(Namespace& ns, const ApexInfo& apex_info);
