@@ -55,6 +55,10 @@ Namespace BuildVndkInSystemNamespace([[maybe_unused]] const Context& ctx) {
                                            : VndkUserPartition::Vendor);
   ns.GetLink("vndk").AllowAllSharedLibs();
 
+  if (ctx.IsVendorSection() || ctx.IsProductSection()) {
+    ns.GetLink("default").AllowAllSharedLibs();
+  }
+
   return ns;
 }
 }  // namespace contents
