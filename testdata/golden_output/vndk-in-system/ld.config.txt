@@ -1206,9 +1206,10 @@ namespace.vndk_in_system.hwasan.search.paths += /system/${LIB}
 namespace.vndk_in_system.hwasan.search.paths += /system_ext/${LIB}/hwasan
 namespace.vndk_in_system.hwasan.search.paths += /system_ext/${LIB}
 namespace.vndk_in_system.allowed_libs = libevent.so:libexif.so:libfmq.so
-namespace.vndk_in_system.links = system,vndk,com_android_neuralnetworks
+namespace.vndk_in_system.links = system,vndk,default,com_android_neuralnetworks
 namespace.vndk_in_system.link.system.shared_libs = libEGL.so:libGLESv1_CM.so:libGLESv2.so:libGLESv3.so:libRS.so:libandroid_net.so:libbinder_ndk.so:libc.so:libcgrouprc.so:libclang_rt.asan-i686-android.so:libdl.so:liblog.so:libm.so:libmediandk.so:libnativewindow.so:libsync.so:libvndksupport.so:libvulkan.so:libdl_android.so:libclang_rt.asan-arm-android.so:libclang_rt.hwasan-arm-android.so:libclang_rt.hwasan-i686-android.so:libclang_rt.tsan-arm-android.so:libclang_rt.tsan-i686-android.so:libclang_rt.ubsan_standalone-arm-android.so:libclang_rt.ubsan_standalone-i686-android.so
 namespace.vndk_in_system.link.vndk.allow_all_shared_libs = true
+namespace.vndk_in_system.link.default.allow_all_shared_libs = true
 namespace.vndk_in_system.link.com_android_neuralnetworks.shared_libs = libneuralnetworks.so
 [product]
 additional.namespaces = com_android_adbd,com_android_art,com_android_i18n,com_android_media,com_android_neuralnetworks,com_android_os_statsd,com_android_resolv,com_android_runtime,com_product_service1,com_vendor_service3,system,vndk,vndk_in_system
@@ -1651,9 +1652,10 @@ namespace.vndk_in_system.hwasan.search.paths += /system/${LIB}
 namespace.vndk_in_system.hwasan.search.paths += /system_ext/${LIB}/hwasan
 namespace.vndk_in_system.hwasan.search.paths += /system_ext/${LIB}
 namespace.vndk_in_system.allowed_libs = libevent.so:libexif.so:libfmq.so
-namespace.vndk_in_system.links = system,vndk,com_android_neuralnetworks
+namespace.vndk_in_system.links = system,vndk,default,com_android_neuralnetworks
 namespace.vndk_in_system.link.system.shared_libs = libEGL.so:libGLESv1_CM.so:libGLESv2.so:libGLESv3.so:libRS.so:libandroid_net.so:libbinder_ndk.so:libc.so:libcgrouprc.so:libclang_rt.asan-i686-android.so:libdl.so:liblog.so:libm.so:libmediandk.so:libnativewindow.so:libsync.so:libvndksupport.so:libvulkan.so:libdl_android.so:libclang_rt.asan-arm-android.so:libclang_rt.hwasan-arm-android.so:libclang_rt.hwasan-i686-android.so:libclang_rt.tsan-arm-android.so:libclang_rt.tsan-i686-android.so:libclang_rt.ubsan_standalone-arm-android.so:libclang_rt.ubsan_standalone-i686-android.so
 namespace.vndk_in_system.link.vndk.allow_all_shared_libs = true
+namespace.vndk_in_system.link.default.allow_all_shared_libs = true
 namespace.vndk_in_system.link.com_android_neuralnetworks.shared_libs = libneuralnetworks.so
 [unrestricted]
 additional.namespaces = com_android_adbd,com_android_art,com_android_conscrypt,com_android_i18n,com_android_media,com_android_neuralnetworks,com_android_os_statsd,com_android_resolv,com_android_runtime,com_vendor_service3,rs,sphal,vndk
