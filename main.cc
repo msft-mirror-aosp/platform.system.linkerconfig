@@ -238,6 +238,19 @@ Context GetContext(const ProgramArgs& args) {
     }
   }
 
+  std::string system_ext_config_path =
+      args.root + "/system_ext/etc/linker.config.pb";
+  if (access(system_ext_config_path.c_str(), F_OK) == 0) {
+    auto system_ext_config = android::linkerconfig::modules::ParseLinkerConfig(
+        system_ext_config_path);
+    if (system_ext_config.ok()) {
+      ctx.SetSystemConfig(*system_ext_config);
+    } else {
+      LOG(ERROR) << "Failed to read system_ext config : "
+                 << system_ext_config.error();
+    }
+  }
+
   std::string vendor_config_path = args.root + "/vendor/etc/linker.config.pb";
   if (access(vendor_config_path.c_str(), F_OK) == 0) {
     auto vendor_config =
