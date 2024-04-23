@@ -156,9 +156,13 @@ void LoadLibraryListVariables(const std::string& root) {
   LoadLlndkLibraryListVariables(root, GetVendorVndkVersion(), "VENDOR");
   LoadLlndkLibraryListVariables(root, GetProductVndkVersion(), "PRODUCT");
 
+  auto llndk_library_path = root + "/system/etc/llndk.libraries.txt";
   auto sanitizer_library_path = root + "/system/etc/sanitizer.libraries.txt";
   Variables::AddValue("SANITIZER_RUNTIME_LIBRARIES",
                       GetLibrariesString(sanitizer_library_path));
+  Variables::AddValue(
+      "SANITIZER_LIBRARIES_LLNDK",
+      GetPrivateLibrariesString(sanitizer_library_path, llndk_library_path));
 }
 }  // namespace
 
