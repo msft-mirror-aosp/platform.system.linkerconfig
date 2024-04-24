@@ -68,11 +68,14 @@ Namespace BaseContext::BuildApexNamespace(const ApexInfo& apex_info,
 
 void BaseContext::SetSystemConfig(
     const android::linkerconfig::proto::LinkerConfig& config) {
-  system_provide_libs_ = {config.providelibs().begin(),
-                          config.providelibs().end()};
-  system_require_libs_ = {config.requirelibs().begin(),
-                          config.requirelibs().end()};
+  system_provide_libs_.insert(system_provide_libs_.end(),
+                              config.providelibs().begin(),
+                              config.providelibs().end());
+  system_require_libs_.insert(system_require_libs_.end(),
+                              config.requirelibs().begin(),
+                              config.requirelibs().end());
 }
+
 const std::vector<std::string>& BaseContext::GetSystemProvideLibs() const {
   return system_provide_libs_;
 }
