@@ -36,17 +36,6 @@ else
   RUN_FROM_SERVER=1
 fi
 
-# $1: target libraries.txt file
-# $2: list of libs. ex) a.so:b.so:c.so
-function write_libraries_txt {
-  rm -rf $1
-  IFS=':'
-  for lib in $2; do
-    echo $lib >> $1
-  done
-  unset IFS
-}
-
 # Simulate build process
 # $1: input tree (with *.json)
 # $2: output tree (*.json files are converted into *.pb)
@@ -94,17 +83,6 @@ function run_linkerconfig_stage2 {
   mkdir -p $1/gen-only-a-single-apex
   echo "Running linkerconfig for gen-only-a-single-apex"
   linkerconfig -v R -z -r $TMP_PATH --apex com.vendor.service2 -t $1/gen-only-a-single-apex
-
-  # skip prepare_root in order to use the same apexs
-  # but with system/etc/vndkcorevariant.libraries.txt
-  vndk_core_variant_libs_file=$TMP_PATH/system/etc/vndkcorevariant.libraries.txt
-  write_libraries_txt $vndk_core_variant_libs_file libevent.so:libexif.so:libfmq.so
-  mkdir -p $1/vndk-in-system
-  echo "Running linkerconfig for vndk-in-system"
-  linkerconfig -v R -p R -z -r $TMP_PATH -t $1/vndk-in-system
-  # clean up
-  rm -if $vndk_core_variant_libs_file
-  vndk_core_variant_libs_file=
 
   echo "Stage 2 completed"
 }
