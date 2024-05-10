@@ -50,7 +50,6 @@ TEST(apex_namespace, build_namespace) {
                               /*require_libs=*/{},
                               /*jni_libs=*/{},
                               /*permitted_paths=*/{},
-                              /*contributions=*/{},
                               /*has_bin=*/false,
                               /*has_lib=*/true,
                               /*visible=*/false,
@@ -63,10 +62,21 @@ TEST(apex_namespace, build_namespace) {
       "namespace.foo.search.paths = /apex/com.android.foo/${LIB}\n"
       "namespace.foo.permitted.paths = /apex/com.android.foo/${LIB}\n"
       "namespace.foo.permitted.paths += /system/${LIB}\n"
+      "namespace.foo.permitted.paths += /system_ext/${LIB}\n"
       "namespace.foo.asan.search.paths = /apex/com.android.foo/${LIB}\n"
       "namespace.foo.asan.permitted.paths = /apex/com.android.foo/${LIB}\n"
       "namespace.foo.asan.permitted.paths += /data/asan/system/${LIB}\n"
-      "namespace.foo.asan.permitted.paths += /system/${LIB}\n",
+      "namespace.foo.asan.permitted.paths += /system/${LIB}\n"
+      "namespace.foo.asan.permitted.paths += /data/asan/system_ext/${LIB}\n"
+      "namespace.foo.asan.permitted.paths += /system_ext/${LIB}\n"
+      "namespace.foo.hwasan.search.paths = /apex/com.android.foo/${LIB}/hwasan\n"
+      "namespace.foo.hwasan.search.paths += /apex/com.android.foo/${LIB}\n"
+      "namespace.foo.hwasan.permitted.paths = /apex/com.android.foo/${LIB}/hwasan\n"
+      "namespace.foo.hwasan.permitted.paths += /apex/com.android.foo/${LIB}\n"
+      "namespace.foo.hwasan.permitted.paths += /system/${LIB}/hwasan\n"
+      "namespace.foo.hwasan.permitted.paths += /system/${LIB}\n"
+      "namespace.foo.hwasan.permitted.paths += /system_ext/${LIB}/hwasan\n"
+      "namespace.foo.hwasan.permitted.paths += /system_ext/${LIB}\n",
       writer.ToString());
 }
 
@@ -80,7 +90,6 @@ TEST(apex_namespace, resolve_between_apex_namespaces) {
                               /*require_libs=*/{"bar.so"},
                               /*jni_libs=*/{},
                               /*permitted_paths=*/{},
-                              /*contributions=*/{},
                               /*has_bin=*/false,
                               /*has_lib=*/true,
                               /*visible=*/false,
@@ -92,7 +101,6 @@ TEST(apex_namespace, resolve_between_apex_namespaces) {
                               /*require_libs=*/{},
                               /*jni_libs=*/{},
                               /*permitted_paths=*/{},
-                              /*contributions=*/{},
                               /*has_bin=*/false,
                               /*has_lib=*/true,
                               /*visible=*/false,
@@ -119,7 +127,6 @@ TEST(apex_namespace, extra_permitted_paths) {
                               /*require_libs=*/{},
                               /*jni_libs=*/{},
                               /*permitted_paths=*/{"/a", "/b/c"},
-                              /*contributions=*/{},
                               /*has_bin=*/false,
                               /*has_lib=*/true,
                               /*visible=*/false,
@@ -132,16 +139,31 @@ TEST(apex_namespace, extra_permitted_paths) {
       "namespace.foo.search.paths = /apex/com.android.foo/${LIB}\n"
       "namespace.foo.permitted.paths = /apex/com.android.foo/${LIB}\n"
       "namespace.foo.permitted.paths += /system/${LIB}\n"
+      "namespace.foo.permitted.paths += /system_ext/${LIB}\n"
       "namespace.foo.permitted.paths += /a\n"
       "namespace.foo.permitted.paths += /b/c\n"
       "namespace.foo.asan.search.paths = /apex/com.android.foo/${LIB}\n"
       "namespace.foo.asan.permitted.paths = /apex/com.android.foo/${LIB}\n"
       "namespace.foo.asan.permitted.paths += /data/asan/system/${LIB}\n"
       "namespace.foo.asan.permitted.paths += /system/${LIB}\n"
+      "namespace.foo.asan.permitted.paths += /data/asan/system_ext/${LIB}\n"
+      "namespace.foo.asan.permitted.paths += /system_ext/${LIB}\n"
       "namespace.foo.asan.permitted.paths += /data/asan/a\n"
       "namespace.foo.asan.permitted.paths += /a\n"
       "namespace.foo.asan.permitted.paths += /data/asan/b/c\n"
-      "namespace.foo.asan.permitted.paths += /b/c\n",
+      "namespace.foo.asan.permitted.paths += /b/c\n"
+      "namespace.foo.hwasan.search.paths = /apex/com.android.foo/${LIB}/hwasan\n"
+      "namespace.foo.hwasan.search.paths += /apex/com.android.foo/${LIB}\n"
+      "namespace.foo.hwasan.permitted.paths = /apex/com.android.foo/${LIB}/hwasan\n"
+      "namespace.foo.hwasan.permitted.paths += /apex/com.android.foo/${LIB}\n"
+      "namespace.foo.hwasan.permitted.paths += /system/${LIB}/hwasan\n"
+      "namespace.foo.hwasan.permitted.paths += /system/${LIB}\n"
+      "namespace.foo.hwasan.permitted.paths += /system_ext/${LIB}/hwasan\n"
+      "namespace.foo.hwasan.permitted.paths += /system_ext/${LIB}\n"
+      "namespace.foo.hwasan.permitted.paths += /a/hwasan\n"
+      "namespace.foo.hwasan.permitted.paths += /a\n"
+      "namespace.foo.hwasan.permitted.paths += /b/c/hwasan\n"
+      "namespace.foo.hwasan.permitted.paths += /b/c\n",
       writer.ToString());
 }
 
@@ -279,4 +301,19 @@ TEST_F(ApexTest, public_libs_should_be_system_apex) {
   auto apexes = ScanActiveApexes(root);
   ASSERT_TRUE(apexes.ok()) << apexes.error();
   ASSERT_EQ(apexes->at("foo").public_libs, std::vector<std::string>{});
+}
+
+TEST_F(ApexTest, system_ext_can_be_linked_to_system_system_ext) {
+  PrepareApex("foo", /*provide_libs=*/{"libfoo.so"}, {}, {});
+  WriteFile("/apex/apex-info-list.xml", R"(<apex-info-list>
+    <apex-info moduleName="foo"
+      preinstalledModulePath="/system/system_ext/apex/foo.apex"
+      modulePath="/data/apex/active/foo.apex"
+      isActive="true" />
+  </apex-info-list>)");
+  WriteFile("/system/etc/public.libraries.txt", "libfoo.so");
+  auto apexes = ScanActiveApexes(root);
+  ASSERT_TRUE(apexes.ok()) << apexes.error();
+  ASSERT_EQ(apexes->at("foo").public_libs,
+            std::vector<std::string>{"libfoo.so"});
 }

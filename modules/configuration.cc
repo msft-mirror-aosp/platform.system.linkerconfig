@@ -24,7 +24,7 @@
 namespace android {
 namespace linkerconfig {
 namespace modules {
-void Configuration::WriteConfig(ConfigWriter& writer) {
+void Configuration::WriteConfig(ConfigWriter& writer) const {
   std::unordered_map<std::string, std::string> resolved_dirs;
 
   for (const auto& [dir, section] : dir_to_section_list_) {

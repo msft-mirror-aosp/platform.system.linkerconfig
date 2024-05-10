@@ -60,7 +60,9 @@ const static struct option program_options[] = {
     {"root", required_argument, 0, 'r'},
     {"vndk", required_argument, 0, 'v'},
     {"product_vndk", required_argument, 0, 'p'},
+    {"deprecate_vndk", no_argument, 0, 'd'},
     {"recovery", no_argument, 0, 'y'},
+    {"treblelize", no_argument, 0, 'z'},
 #endif
     {"help", no_argument, 0, 'h'},
     {0, 0, 0, 0}};
@@ -73,6 +75,8 @@ struct ProgramArgs {
   std::string vndk_version;
   std::string product_vndk_version;
   bool is_recovery;
+  bool deprecate_vndk;
+  bool is_treblelized;
 };
 
 [[noreturn]] void PrintUsage(int status = EXIT_SUCCESS) {
@@ -84,6 +88,7 @@ struct ProgramArgs {
                " --vndk <vndk version>"
                " --product_vndk <product vndk version>"
                " --recovery"
+               " --treblelize"
 #endif
                " [--help]"
             << std::endl;
@@ -101,7 +106,7 @@ std::string RealPath(std::string_view path) {
 bool ParseArgs(int argc, char* argv[], ProgramArgs* args) {
   int parse_result;
   while ((parse_result = getopt_long(
-              argc, argv, "a:t:sr:v:ep:hyl", program_options, NULL)) != -1) {
+              argc, argv, "a:t:sr:v:ep:hzyl", program_options, NULL)) != -1) {
     switch (parse_result) {
       case 'a':
         args->target_apex = optarg;
@@ -121,6 +126,9 @@ bool ParseArgs(int argc, char* argv[], ProgramArgs* args) {
       case 'p':
         args->product_vndk_version = optarg;
         break;
+      case 'z':
+        args->is_treblelized = true;
+        break;
       case 'y':
         args->is_recovery = true;
         break;
@@ -138,7 +146,7 @@ bool ParseArgs(int argc, char* argv[], ProgramArgs* args) {
   return true;
 }
 
-void LoadVariables(ProgramArgs args) {
+void LoadVariables(const ProgramArgs& args) {
 #ifndef __ANDROID__
   if (!args.is_recovery && args.root == "") {
     PrintUsage();
@@ -147,6 +155,11 @@ void LoadVariables(ProgramArgs args) {
                                                       args.vndk_version);
   android::linkerconfig::modules::Variables::AddValue(
       "ro.product.vndk.version", args.product_vndk_version);
+
+  if (args.is_treblelized) {
+    android::linkerconfig::modules::Variables::AddValue("ro.treble.enabled",
+                                                        "true");
+  }
 #endif
   if (!args.is_recovery) {
     android::linkerconfig::generator::LoadVariables(args.root);
@@ -190,7 +203,7 @@ Result<void> UpdatePermission([[maybe_unused]] const std::string& file_path) {
   return {};
 }
 
-Context GetContext(ProgramArgs args) {
+Context GetContext(const ProgramArgs& args) {
   Context ctx;
   if (args.strict) {
     ctx.SetStrictMode(true);
@@ -225,6 +238,19 @@ Context GetContext(ProgramArgs args) {
     }
   }
 
+  std::string system_ext_config_path =
+      args.root + "/system_ext/etc/linker.config.pb";
+  if (access(system_ext_config_path.c_str(), F_OK) == 0) {
+    auto system_ext_config = android::linkerconfig::modules::ParseLinkerConfig(
+        system_ext_config_path);
+    if (system_ext_config.ok()) {
+      ctx.SetSystemConfig(*system_ext_config);
+    } else {
+      LOG(ERROR) << "Failed to read system_ext config : "
+                 << system_ext_config.error();
+    }
+  }
+
   std::string vendor_config_path = args.root + "/vendor/etc/linker.config.pb";
   if (access(vendor_config_path.c_str(), F_OK) == 0) {
     auto vendor_config =
@@ -254,7 +280,7 @@ Configuration GetConfiguration(Context& ctx) {
     return android::linkerconfig::contents::CreateRecoveryConfiguration(ctx);
   }
 
-  if (android::linkerconfig::modules::IsLegacyDevice()) {
+  if (!android::linkerconfig::modules::IsTreblelizedDevice()) {
     return android::linkerconfig::contents::CreateLegacyConfiguration(ctx);
   }
 
@@ -391,7 +417,7 @@ int main(int argc, char* argv[]) {
     PrintUsage(EXIT_FAILURE);
   }
 
-  if (!android::linkerconfig::modules::IsLegacyDevice() &&
+  if (android::linkerconfig::modules::IsTreblelizedDevice() &&
       android::linkerconfig::modules::IsVndkLiteDevice()) {
     LOG(ERROR) << "Linkerconfig no longer supports VNDK-Lite configuration";
     exit(EXIT_FAILURE);

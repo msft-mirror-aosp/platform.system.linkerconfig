@@ -31,7 +31,6 @@
 
 #include "linkerconfig/environment.h"
 
-using android::linkerconfig::modules::IsProductVndkVersionDefined;
 using android::linkerconfig::modules::Namespace;
 
 namespace android {
@@ -45,9 +44,6 @@ Namespace BuildVndkInSystemNamespace([[maybe_unused]] const Context& ctx) {
   // The search paths here should be kept the same as that of the 'system' namespace.
   ns.AddSearchPath("/system/${LIB}");
   ns.AddSearchPath(Var("SYSTEM_EXT") + "/${LIB}");
-  if (!IsProductVndkVersionDefined()) {
-    ns.AddSearchPath(Var("PRODUCT") + "/${LIB}");
-  }
 
   if (android::linkerconfig::modules::IsVndkInSystemNamespace()) {
     ns.AddAllowedLib(Var("VNDK_USING_CORE_VARIANT_LIBRARIES"));
@@ -58,6 +54,10 @@ Namespace BuildVndkInSystemNamespace([[maybe_unused]] const Context& ctx) {
                     ctx.IsProductSection() ? VndkUserPartition::Product
                                            : VndkUserPartition::Vendor);
   ns.GetLink("vndk").AllowAllSharedLibs();
+
+  if (ctx.IsVendorSection() || ctx.IsProductSection()) {
+    ns.GetLink("default").AllowAllSharedLibs();
+  }
 
   return ns;
 }

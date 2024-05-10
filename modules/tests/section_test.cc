@@ -23,6 +23,7 @@
 #include "linkerconfig/apex.h"
 #include "linkerconfig/basecontext.h"
 #include "linkerconfig/configwriter.h"
+#include "linkerconfig/variables.h"
 #include "modules_testbase.h"
 
 using namespace android::linkerconfig::modules;
@@ -42,6 +43,14 @@ namespace.default.asan.search.paths += /apex/search_path2
 namespace.default.asan.permitted.paths = /data/asan/permitted_path1
 namespace.default.asan.permitted.paths += /permitted_path1
 namespace.default.asan.permitted.paths += /apex/permitted_path2
+namespace.default.hwasan.search.paths = /search_path1/hwasan
+namespace.default.hwasan.search.paths += /search_path1
+namespace.default.hwasan.search.paths += /apex/search_path2/hwasan
+namespace.default.hwasan.search.paths += /apex/search_path2
+namespace.default.hwasan.permitted.paths = /permitted_path1/hwasan
+namespace.default.hwasan.permitted.paths += /permitted_path1
+namespace.default.hwasan.permitted.paths += /apex/permitted_path2/hwasan
+namespace.default.hwasan.permitted.paths += /apex/permitted_path2
 namespace.default.links = namespace1,namespace2
 namespace.default.link.namespace1.shared_libs = lib1.so:lib2.so:lib3.so
 namespace.default.link.namespace2.allow_all_shared_libs = true
@@ -56,6 +65,14 @@ namespace.namespace1.asan.search.paths += /apex/search_path2
 namespace.namespace1.asan.permitted.paths = /data/asan/permitted_path1
 namespace.namespace1.asan.permitted.paths += /permitted_path1
 namespace.namespace1.asan.permitted.paths += /apex/permitted_path2
+namespace.namespace1.hwasan.search.paths = /search_path1/hwasan
+namespace.namespace1.hwasan.search.paths += /search_path1
+namespace.namespace1.hwasan.search.paths += /apex/search_path2/hwasan
+namespace.namespace1.hwasan.search.paths += /apex/search_path2
+namespace.namespace1.hwasan.permitted.paths = /permitted_path1/hwasan
+namespace.namespace1.hwasan.permitted.paths += /permitted_path1
+namespace.namespace1.hwasan.permitted.paths += /apex/permitted_path2/hwasan
+namespace.namespace1.hwasan.permitted.paths += /apex/permitted_path2
 namespace.namespace1.links = default,namespace2
 namespace.namespace1.link.default.shared_libs = lib1.so:lib2.so:lib3.so
 namespace.namespace1.link.namespace2.allow_all_shared_libs = true
@@ -70,6 +87,14 @@ namespace.namespace2.asan.search.paths += /apex/search_path2
 namespace.namespace2.asan.permitted.paths = /data/asan/permitted_path1
 namespace.namespace2.asan.permitted.paths += /permitted_path1
 namespace.namespace2.asan.permitted.paths += /apex/permitted_path2
+namespace.namespace2.hwasan.search.paths = /search_path1/hwasan
+namespace.namespace2.hwasan.search.paths += /search_path1
+namespace.namespace2.hwasan.search.paths += /apex/search_path2/hwasan
+namespace.namespace2.hwasan.search.paths += /apex/search_path2
+namespace.namespace2.hwasan.permitted.paths = /permitted_path1/hwasan
+namespace.namespace2.hwasan.permitted.paths += /permitted_path1
+namespace.namespace2.hwasan.permitted.paths += /apex/permitted_path2/hwasan
+namespace.namespace2.hwasan.permitted.paths += /apex/permitted_path2
 )";
 
 constexpr const char* kSectionWithOneNamespaceExpectedResult =
@@ -85,6 +110,14 @@ namespace.default.asan.search.paths += /apex/search_path2
 namespace.default.asan.permitted.paths = /data/asan/permitted_path1
 namespace.default.asan.permitted.paths += /permitted_path1
 namespace.default.asan.permitted.paths += /apex/permitted_path2
+namespace.default.hwasan.search.paths = /search_path1/hwasan
+namespace.default.hwasan.search.paths += /search_path1
+namespace.default.hwasan.search.paths += /apex/search_path2/hwasan
+namespace.default.hwasan.search.paths += /apex/search_path2
+namespace.default.hwasan.permitted.paths = /permitted_path1/hwasan
+namespace.default.hwasan.permitted.paths += /permitted_path1
+namespace.default.hwasan.permitted.paths += /apex/permitted_path2/hwasan
+namespace.default.hwasan.permitted.paths += /apex/permitted_path2
 )";
 
 TEST(linkerconfig_section, section_with_namespaces) {
@@ -149,6 +182,10 @@ TEST(linkerconfig_section, resolve_contraints) {
 
 TEST(linkerconfig_section, error_if_duplicate_providing) {
   BaseContext ctx;
+  // TODO(b/297821005) : remove vendor / product vndk version set up
+  android::linkerconfig::modules::Variables::AddValue("ro.vndk.version", "99");
+  android::linkerconfig::modules::Variables::AddValue("ro.product.vndk.version",
+                                                      "99");
   std::vector<Namespace> namespaces;
   Namespace& foo1 = namespaces.emplace_back("foo1");
   foo1.AddProvides(std::vector{"libfoo.so"});
@@ -210,11 +247,10 @@ TEST(linkerconfig_section, ignore_unmet_requirements) {
 TEST(linkerconfig_section, resolve_section_with_apex) {
   BaseContext ctx;
   ctx.SetApexModules(
-      {ApexInfo(
-           "foo", "", {"a.so"}, {"b.so"}, {}, {}, {}, true, true, false, false),
-       ApexInfo("bar", "", {"b.so"}, {}, {}, {}, {}, true, true, false, false),
+      {ApexInfo("foo", "", {"a.so"}, {"b.so"}, {}, {}, true, true, false, false),
+       ApexInfo("bar", "", {"b.so"}, {}, {}, {}, true, true, false, false),
        ApexInfo(
-           "baz", "", {"c.so"}, {"a.so"}, {}, {}, {}, true, true, false, false)});
+           "baz", "", {"c.so"}, {"a.so"}, {}, {}, true, true, false, false)});
   std::vector<Namespace> namespaces;
   Namespace& default_ns = namespaces.emplace_back("default");
   default_ns.AddRequires(std::vector{"a.so", "b.so"});
@@ -234,4 +270,31 @@ TEST(linkerconfig_section, resolve_section_with_apex) {
               ::testing::ContainerEq(
                   section.GetNamespace("foo")->GetLink("bar").GetSharedLibs()));
   EXPECT_EQ(nullptr, section.GetNamespace("baz"));
+}
+
+TEST(linkerconfig_section, resolve_link_modifiers) {
+  BaseContext ctx;
+  std::vector<Namespace> namespaces;
+  Namespace& default_ns = namespaces.emplace_back("default");
+  default_ns.AddRequires(std::vector{":foo", ":bar"});
+
+  LibProviders providers;
+  providers[":foo"].emplace_back(LibProvider{
+      "foo",
+      []() { return Namespace("foo"); },
+      AllowAllSharedLibs{},
+  });
+  providers[":bar"].emplace_back(LibProvider{
+      "bar",
+      []() { return Namespace("bar"); },
+      SharedLibs{{"libbar.so"}},
+  });
+
+  Section section("section", std::move(namespaces));
+  section.Resolve(ctx, providers);
+
+  EXPECT_TRUE(
+      section.GetNamespace("default")->GetLink("foo").IsAllSharedLibsAllowed());
+  EXPECT_THAT(section.GetNamespace("default")->GetLink("bar").GetSharedLibs(),
+              ::testing::ContainerEq(std::vector<std::string>{"libbar.so"}));
 }

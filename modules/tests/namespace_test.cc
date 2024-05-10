@@ -41,6 +41,14 @@ namespace.test_namespace.asan.search.paths += /apex/search_path2
 namespace.test_namespace.asan.permitted.paths = /data/asan/permitted_path1
 namespace.test_namespace.asan.permitted.paths += /permitted_path1
 namespace.test_namespace.asan.permitted.paths += /apex/permitted_path2
+namespace.test_namespace.hwasan.search.paths = /search_path1/hwasan
+namespace.test_namespace.hwasan.search.paths += /search_path1
+namespace.test_namespace.hwasan.search.paths += /apex/search_path2/hwasan
+namespace.test_namespace.hwasan.search.paths += /apex/search_path2
+namespace.test_namespace.hwasan.permitted.paths = /permitted_path1/hwasan
+namespace.test_namespace.hwasan.permitted.paths += /permitted_path1
+namespace.test_namespace.hwasan.permitted.paths += /apex/permitted_path2/hwasan
+namespace.test_namespace.hwasan.permitted.paths += /apex/permitted_path2
 )";
 
 constexpr const char* kExpectedNamespaceWithLinkConfig =
@@ -56,6 +64,14 @@ namespace.test_namespace.asan.search.paths += /apex/search_path2
 namespace.test_namespace.asan.permitted.paths = /data/asan/permitted_path1
 namespace.test_namespace.asan.permitted.paths += /permitted_path1
 namespace.test_namespace.asan.permitted.paths += /apex/permitted_path2
+namespace.test_namespace.hwasan.search.paths = /search_path1/hwasan
+namespace.test_namespace.hwasan.search.paths += /search_path1
+namespace.test_namespace.hwasan.search.paths += /apex/search_path2/hwasan
+namespace.test_namespace.hwasan.search.paths += /apex/search_path2
+namespace.test_namespace.hwasan.permitted.paths = /permitted_path1/hwasan
+namespace.test_namespace.hwasan.permitted.paths += /permitted_path1
+namespace.test_namespace.hwasan.permitted.paths += /apex/permitted_path2/hwasan
+namespace.test_namespace.hwasan.permitted.paths += /apex/permitted_path2
 namespace.test_namespace.links = target_namespace1,target_namespace2
 namespace.test_namespace.link.target_namespace1.shared_libs = lib1.so:lib2.so:lib3.so
 namespace.test_namespace.link.target_namespace2.allow_all_shared_libs = true
@@ -73,6 +89,14 @@ namespace.test_namespace.asan.search.paths += /apex/search_path2
 namespace.test_namespace.asan.permitted.paths = /data/asan/permitted_path1
 namespace.test_namespace.asan.permitted.paths += /permitted_path1
 namespace.test_namespace.asan.permitted.paths += /apex/permitted_path2
+namespace.test_namespace.hwasan.search.paths = /search_path1/hwasan
+namespace.test_namespace.hwasan.search.paths += /search_path1
+namespace.test_namespace.hwasan.search.paths += /apex/search_path2/hwasan
+namespace.test_namespace.hwasan.search.paths += /apex/search_path2
+namespace.test_namespace.hwasan.permitted.paths = /permitted_path1/hwasan
+namespace.test_namespace.hwasan.permitted.paths += /permitted_path1
+namespace.test_namespace.hwasan.permitted.paths += /apex/permitted_path2/hwasan
+namespace.test_namespace.hwasan.permitted.paths += /apex/permitted_path2
 namespace.test_namespace.allowed_libs = allowed_libs_path1
 namespace.test_namespace.allowed_libs += allowed_libs_path2
 )";
@@ -131,11 +155,23 @@ TEST(linkerconfig_namespace, namespace_links_should_be_ordered) {
 
 TEST(linkerconfig_namespace, apex_should_not_allow_all_links) {
   Namespace ns("test_namespace");
-  ns.SetApexSource("com.android.test");
+  ns.SetApexSource(ApexSource{"com.android.test", false});
   ns.GetLink("target_namespace").AllowAllSharedLibs();
 
   ConfigWriter writer;
   ns.WriteConfig(writer);
 
   ASSERT_EQ("", writer.ToString());
+}
+
+TEST(linkerconfig_namespace, should_not_add_link_to_self) {
+  ConfigWriter writer;
+
+  auto ns = CreateNamespaceWithLinks(
+      "test_namespace", true, true, "target_namespace1", "target_namespace2");
+  ns.GetLink("test_namespace").AddSharedLib("libtest.so");
+  ns.WriteConfig(writer);
+  auto config = writer.ToString();
+
+  ASSERT_EQ(config, kExpectedNamespaceWithLinkConfig);
 }
