@@ -152,9 +152,14 @@ public class LinkerConfigTest extends BaseHostJUnit4Test {
                 "/system/etc/sanitizer.libraries.txt", true));
 
         // Add LLNDK libraries
-        libraries.addAll(LibraryListLoader.getLibrariesFromFile(targetDevice,
+        if (vendorVndkVersion == null || vendorVndkVersion.isEmpty()) {
+            libraries.addAll(LibraryListLoader.getLibrariesFromFile(targetDevice,
+                "/system/etc/llndk.libraries.txt", true));
+        } else {
+            libraries.addAll(LibraryListLoader.getLibrariesFromFile(targetDevice,
                 "/apex/com.android.vndk.v" + vendorVndkVersion + "/etc/llndk.libraries."
                         + vendorVndkVersion + ".txt", true));
+        }
 
         // Add Stub libraries
         libraries.addAll(LibraryListLoader.STUB_LIBRARIES);
@@ -208,10 +213,6 @@ public class LinkerConfigTest extends BaseHostJUnit4Test {
             vendorVndkVersion = targetDevice.getProperty(VENDOR_VNDK_VERSION);
         } catch (DeviceNotAvailableException e) {
             fail("Target device is not available : " + e.getMessage());
-        }
-
-        if (vendorVndkVersion == null || vendorVndkVersion.isEmpty()) {
-            return;
         }
 
         Configuration conf = loadConfig(targetDevice, LINKER_CONFIG_LOCATION);
