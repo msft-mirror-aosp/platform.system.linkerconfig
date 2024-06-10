@@ -16,7 +16,7 @@
 
 package android.linkerconfig.gts.utils;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 
 import com.android.tradefed.device.DeviceNotAvailableException;
@@ -42,21 +42,21 @@ public class LibraryListLoader {
             fail("There is no available device : " + e.getMessage());
         }
 
-        assertTrue("Failed to get library list file from " + path,
-                target.exists() || !expectFileExists);
+        if (target == null) {
+            assertFalse("Failed to get library list file from " + path, expectFileExists);
+            return libraries;
+        }
 
-        if (target.exists()) {
-            try (BufferedReader reader = new BufferedReader(new FileReader(target))) {
-                String library;
-                while ((library = reader.readLine()) != null) {
-                    library = library.trim();
-                    if (!library.isEmpty()) {
-                        libraries.add(library);
-                    }
+        try (BufferedReader reader = new BufferedReader(new FileReader(target))) {
+            String library;
+            while ((library = reader.readLine()) != null) {
+                library = library.trim();
+                if (!library.isEmpty()) {
+                    libraries.add(library);
                 }
-            } catch (Exception e) {
-                fail("Failed to read file " + path + " with error : " + e.getMessage());
             }
+        } catch (Exception e) {
+            fail("Failed to read file " + path + " with error : " + e.getMessage());
         }
 
         return libraries;
