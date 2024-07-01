@@ -158,7 +158,6 @@ cc_test_host {
     static_libs: [
         "libgmock",
         "linkerconfig_modules",
-        "libc++fs",
     ],
     data: [
         "modules/tests/data/linker.config.*",
