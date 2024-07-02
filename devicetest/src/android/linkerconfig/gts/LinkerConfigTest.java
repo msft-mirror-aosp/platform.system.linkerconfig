@@ -222,6 +222,9 @@ public class LinkerConfigTest extends BaseHostJUnit4Test {
             boardApiLevel = Integer.parseInt(targetDevice.getProperty(BOARD_API_LEVEL));
         } catch (DeviceNotAvailableException e) {
             fail("Target device is not available : " + e.getMessage());
+        } catch (NumberFormatException e) {
+            // fallback with 0
+            boardApiLevel = 0;
         }
 
         assumeTrue(boardApiLevel >= 202404 || (vendorVndkVersion != null &&
