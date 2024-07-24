@@ -36,17 +36,6 @@ else
   RUN_FROM_SERVER=1
 fi
 
-# $1: target libraries.txt file
-# $2: list of libs. ex) a.so:b.so:c.so
-function write_libraries_txt {
-  rm -rf $1
-  IFS=':'
-  for lib in $2; do
-    echo $lib >> $1
-  done
-  unset IFS
-}
-
 # Simulate build process
 # $1: input tree (with *.json)
 # $2: output tree (*.json files are converted into *.pb)
@@ -73,7 +62,7 @@ function run_linkerconfig_stage1 {
 
   mkdir -p $1/stage1
   echo "Running linkerconfig for stage 1"
-  linkerconfig -v R -p R -z -r $TMP_PATH -t $1/stage1
+  linkerconfig -z -r $TMP_PATH -t $1/stage1
 
   echo "Stage 1 completed"
 }
@@ -88,45 +77,19 @@ function run_linkerconfig_stage2 {
 
   mkdir -p $1/stage2
   echo "Running linkerconfig for stage 2"
-  linkerconfig -v R -p R -z -r $TMP_PATH -t $1/stage2
+  linkerconfig -z -r $TMP_PATH -t $1/stage2
+
+  # skip prepare_root (reuse the previous setup)
+  mkdir -p $1/vendor_with_vndk
+  echo "Running linkerconfig with VNDK available on the vendor partition"
+  linkerconfig -v R -z -r $TMP_PATH -t $1/vendor_with_vndk
 
   # skip prepare_root (reuse the previous setup)
   mkdir -p $1/gen-only-a-single-apex
   echo "Running linkerconfig for gen-only-a-single-apex"
   linkerconfig -v R -z -r $TMP_PATH --apex com.vendor.service2 -t $1/gen-only-a-single-apex
 
-  # skip prepare_root in order to use the same apexs
-  # but with system/etc/vndkcorevariant.libraries.txt
-  vndk_core_variant_libs_file=$TMP_PATH/system/etc/vndkcorevariant.libraries.txt
-  write_libraries_txt $vndk_core_variant_libs_file libevent.so:libexif.so:libfmq.so
-  mkdir -p $1/vndk-in-system
-  echo "Running linkerconfig for vndk-in-system"
-  linkerconfig -v R -p R -z -r $TMP_PATH -t $1/vndk-in-system
-  # clean up
-  rm -if $vndk_core_variant_libs_file
-  vndk_core_variant_libs_file=
-
   echo "Stage 2 completed"
-}
-
-function run_linkerconfig_deprecate_vndk {
-  # prepare root
-  echo "Prepare root for VNDK deprecation"
-  TMP_PATH=$2/deprecate_vndk
-  mkdir $TMP_PATH
-  build_root testdata/root $TMP_PATH
-  ./testdata/prepare_root.sh --all --block com.android.art:com.android.vndk.vR --root $TMP_PATH
-
-  mkdir -p $1/deprecate_vndk
-  echo "Running linkerconfig with VNDK deprecated"
-  linkerconfig -z -r $TMP_PATH -t $1/deprecate_vndk
-
-  # skip prepare_root (reuse the previous setup)
-  mkdir -p $1/deprecate_product_vndk
-  echo "Running linkerconfig with VNDK deprecated only with product partition"
-  linkerconfig -v R -z -r $TMP_PATH -t $1/deprecate_product_vndk
-
-  echo "Stage VNDK deprecation completed"
 }
 
 function run_linkerconfig_others {
@@ -156,8 +119,6 @@ function run_linkerconfig_to {
   run_linkerconfig_stage1 $1 $TMP_ROOT &
 
   run_linkerconfig_stage2 $1 $TMP_ROOT &
-
-  run_linkerconfig_deprecate_vndk $1 $TMP_ROOT &
 
   run_linkerconfig_others $1 $TMP_ROOT &
 

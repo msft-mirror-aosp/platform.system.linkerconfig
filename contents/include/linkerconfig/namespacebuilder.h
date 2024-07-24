@@ -37,7 +37,6 @@ NamespaceBuilder BuildUnrestrictedDefaultNamespace;
 NamespaceBuilder BuildPostInstallNamespace;
 NamespaceBuilder BuildRecoveryDefaultNamespace;
 NamespaceBuilder BuildIsolatedDefaultNamespace;
-NamespaceBuilder BuildFuzzDefaultNamespace;
 
 modules::Namespace BuildVendorNamespace(const Context& ctx,
                                         const std::string& name);

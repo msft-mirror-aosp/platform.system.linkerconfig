@@ -23,6 +23,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.linkerconfig.gts.utils.LibraryListLoader;
 import android.linkerconfig.gts.utils.LinkerConfigParser;
@@ -57,6 +58,7 @@ public class LinkerConfigTest extends BaseHostJUnit4Test {
     private static final String LINKER_CONFIG_LOCATION = "/linkerconfig/ld.config.txt";
     private static final String VENDOR_VNDK_LITE = "ro.vndk.lite";
     private static final String VENDOR_VNDK_VERSION = "ro.vndk.version";
+    private static final String BOARD_API_LEVEL = "ro.board.api_level";
     private static final int TARGET_MIN_VER = 30; // linkerconfig is available from R
 
     private static boolean isValidVersion(ITestDevice device) {
@@ -152,9 +154,14 @@ public class LinkerConfigTest extends BaseHostJUnit4Test {
                 "/system/etc/sanitizer.libraries.txt", true));
 
         // Add LLNDK libraries
-        libraries.addAll(LibraryListLoader.getLibrariesFromFile(targetDevice,
+        if (vendorVndkVersion == null || vendorVndkVersion.isEmpty()) {
+            libraries.addAll(LibraryListLoader.getLibrariesFromFile(targetDevice,
+                "/system/etc/llndk.libraries.txt", true));
+        } else {
+            libraries.addAll(LibraryListLoader.getLibrariesFromFile(targetDevice,
                 "/apex/com.android.vndk.v" + vendorVndkVersion + "/etc/llndk.libraries."
                         + vendorVndkVersion + ".txt", true));
+        }
 
         // Add Stub libraries
         libraries.addAll(LibraryListLoader.STUB_LIBRARIES);
@@ -210,9 +217,18 @@ public class LinkerConfigTest extends BaseHostJUnit4Test {
             fail("Target device is not available : " + e.getMessage());
         }
 
-        if (vendorVndkVersion == null || vendorVndkVersion.isEmpty()) {
-            return;
+        int boardApiLevel = 0;
+        try {
+            boardApiLevel = Integer.parseInt(targetDevice.getProperty(BOARD_API_LEVEL));
+        } catch (DeviceNotAvailableException e) {
+            fail("Target device is not available : " + e.getMessage());
+        } catch (NumberFormatException e) {
+            // fallback with 0
+            boardApiLevel = 0;
         }
+
+        assumeTrue(boardApiLevel >= 202404 || (vendorVndkVersion != null &&
+                !vendorVndkVersion.isEmpty()));
 
         Configuration conf = loadConfig(targetDevice, LINKER_CONFIG_LOCATION);
 

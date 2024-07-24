@@ -154,6 +154,16 @@ Section BuildApexDefaultSection(Context& ctx, const ApexInfo& apex_info) {
         std::bind(BuildVndkNamespace, ctx, user_partition),
         SharedLibs{{Var("VNDK_SAMEPROCESS_LIBRARIES_" + user_partition_suffix)}},
     }};
+  } else if (apex_info.InProduct() || apex_info.InVendor()) {
+    // vendor or product partitions don't need this because they link LLNDK
+    // libs. however, vendor/product apexes still need to link LLNDK sanitizer
+    // libs even though these are not listed in "required".
+    libs_providers[":sanitizer"] = {LibProvider{
+        ctx.GetSystemNamespaceName(),
+        std::bind(BuildApexPlatformNamespace,
+                  ctx),  // "system" should be available
+        SharedLibs{{Var("SANITIZER_LIBRARIES_LLNDK")}},
+    }};
   }
 
   if (apex_info.InVendor()) {
