@@ -301,12 +301,13 @@ bool ApexInfo::InProduct() const {
 }
 
 bool ApexInfo::InVendor() const {
-  // /vendor partition
+  // /vendor and /odm partition
   if (StartsWith(original_path, "/vendor/apex/") ||
-      StartsWith(original_path, "/system/vendor/apex/")) {
+      StartsWith(original_path, "/system/vendor/apex/") ||
+      StartsWith(original_path, "/odm/apex/") ||
+      StartsWith(original_path, "/system/odm/apex/")) {
     return true;
   }
-  // /odm/apex is not supported yet.
   return false;
 }
 
