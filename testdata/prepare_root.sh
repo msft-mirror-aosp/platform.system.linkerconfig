@@ -101,7 +101,7 @@ apexInfo=$ROOT/apex/apex-info-list.xml
 echo "<?xml version=\"1.0\" encoding=\"utf-8\"?>" > $apexInfo
 echo "<apex-info-list>" > $apexInfo
 
-for partition in system product system_ext vendor; do
+for partition in system product system_ext vendor odm; do
   if [ -d $ROOT/$partition/apex ]; then
     for src in $ROOT/$partition/apex/*/; do
       if test ! -d $src; then
